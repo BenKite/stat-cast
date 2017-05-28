@@ -7,7 +7,7 @@
 ## install.packages("plyr")
 library(plyr)
 
-datdir <- "data/"
+datdir <- "../data/"
 ## This is the Clayton Kershaw data that I have in the repo
 pdat <-  paste0(datdir, "477132_data.csv")
 
