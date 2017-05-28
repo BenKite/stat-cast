@@ -3,9 +3,8 @@
 ## 2017-05-28
 
 import requests, bs4
-import re, os
+import re
 import pandas
-import csv
 import io
 
 ## For the pid value provided, a csv file is saved for the desired pitcher.
@@ -23,6 +22,16 @@ def pitcherData(pid, directory):
 
 ## This obtains data for Danny Duffy    
 pitcherData("518633", "../data/")
+
+def batterData(pid, directory):
+    url = "https://baseballsavant.mlb.com/statcast_search/csv?hfPT=&hfAB=&hfBBT=&hfPR=&hfZ=&stadium=&hfBBL=&hfNewZones=&hfGT=R%7C&hfC=&hfSea=2017%7C&hfSit=&player_type=batter&hfOuts=&opponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&team=&position=&hfRO=&home_road=&hfFlag=&metric_1=&hfInn=&min_pitches=0&min_results=0&group_by=name&sort_col=pitches&player_event_sort=h_launch_speed&sort_order=desc&min_abs=0&type=details&player_id=PLAYERID"
+    url = url.replace("PLAYERID", pid)
+    path = directory + pid + '.csv'
+    res = requests.get(url)
+    tdat = res.text
+    test = io.StringIO(tdat)
+    dat = pandas.read_csv(test)
+    dat.to_csv(path, index = False)
 
 
 ## Generate a list of pitcher id values that can be used.
@@ -55,5 +64,17 @@ def pullPitchingList(plist, directory):
     for p in range(0, len(plist)):
         idval = str(plist.iloc[p, 1])
         pitcherData(idval, directory)
+
+## Ensure that ../data/pitchers/ exists!
+pullPitchingList(plist, "../data/pitchers/")
+
+## Now do batters
+blist = listIDs("batter")
+
+def pullBattingList(blist, directory):
+    for b in range(0, len(blist)):
+        idval = str(blist.iloc[b, 1])
+        batterData(idval, directory)
         
-pullPitchingList(plist, "../data/")
+## Ensure that ../data/batters/ exists!     
+pullBattingList(blist, "../data/batters/")
