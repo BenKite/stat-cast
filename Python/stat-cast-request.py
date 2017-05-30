@@ -3,30 +3,29 @@
 ## 2017-05-28
 
 import requests, bs4
-import re
+import re, os
 import pandas
 import io
 
 ## For the pid value provided, a csv file is saved for the desired pitcher.
 ## A list of possible pid values for pitchers can be provided using the listIDs
 ## function which is provided below.
-def pitcherData(pid, directory):
-    url = "https://baseballsavant.mlb.com/statcast_search/csv?hfPT=&hfAB=&hfBBT=&hfPR=&hfZ=&stadium=&hfBBL=&hfNewZones=&hfGT=R%7C&hfC=&hfSea=2017%7C&hfSit=&player_type=pitcher&hfOuts=&opponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&player_lookup%5B%5D=PLAYERID&team=&position=&hfRO=&home_road=&hfFlag=&metric_1=&hfInn=&min_pitches=0&min_results=0&group_by=name&sort_col=pitches&player_event_sort=h_launch_speed&sort_order=desc&min_abs=0&type=details&player_id=PLAYERID"
+def pitcherData(pid, directory, season):
+    url = "https://baseballsavant.mlb.com/statcast_search/csv?hfPT=&hfAB=&hfBBT=&hfPR=&hfZ=&stadium=&hfBBL=&hfNewZones=&hfGT=R%7C&hfC=&hfSea=SEASON%7C&hfSit=&player_type=pitcher&hfOuts=&opponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&player_lookup%5B%5D=PLAYERID&team=&position=&hfRO=&home_road=&hfFlag=&metric_1=&hfInn=&min_pitches=0&min_results=0&group_by=name&sort_col=pitches&player_event_sort=h_launch_speed&sort_order=desc&min_abs=0&type=details&player_id=PLAYERID"
     url = url.replace("PLAYERID", pid)
-    path = directory + pid + '.csv'
+    url = url.replace("SEASON", str(season))
+    path = directory + pid + "_" + str(season) + '.csv'
     res = requests.get(url)
     tdat = res.text
     test = io.StringIO(tdat)
     dat = pandas.read_csv(test)
     dat.to_csv(path, index = False)
 
-## This obtains data for Danny Duffy    
-pitcherData("518633", "../data/")
-
-def batterData(pid, directory):
-    url = "https://baseballsavant.mlb.com/statcast_search/csv?hfPT=&hfAB=&hfBBT=&hfPR=&hfZ=&stadium=&hfBBL=&hfNewZones=&hfGT=R%7C&hfC=&hfSea=2017%7C&hfSit=&player_type=batter&hfOuts=&opponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&team=&position=&hfRO=&home_road=&hfFlag=&metric_1=&hfInn=&min_pitches=0&min_results=0&group_by=name&sort_col=pitches&player_event_sort=h_launch_speed&sort_order=desc&min_abs=0&type=details&player_id=PLAYERID"
+def batterData(pid, directory, season):
+    url = "https://baseballsavant.mlb.com/statcast_search/csv?hfPT=&hfAB=&hfBBT=&hfPR=&hfZ=&stadium=&hfBBL=&hfNewZones=&hfGT=R%7C&hfC=&hfSea=SEASON%7C&hfSit=&player_type=batter&hfOuts=&opponent=&pitcher_throws=&batter_stands=&hfSA=&game_date_gt=&game_date_lt=&team=&position=&hfRO=&home_road=&hfFlag=&metric_1=&hfInn=&min_pitches=0&min_results=0&group_by=name&sort_col=pitches&player_event_sort=h_launch_speed&sort_order=desc&min_abs=0&type=details&player_id=PLAYERID"
     url = url.replace("PLAYERID", pid)
-    path = directory + pid + '.csv'
+    url = url.replace("SEASON", str(season))
+    path = directory + pid + "_" + str(season) + '.csv'
     res = requests.get(url)
     tdat = res.text
     test = io.StringIO(tdat)
@@ -60,21 +59,25 @@ def listIDs(ptype):
 plist = listIDs("pitcher")
 
 ## Runs over a list of pitchers and their ids to save .csv files.
-def pullPitchingList(plist, directory):
+def pullPitchingList(plist, directory, season):
+    plist.to_csv(directory + "player_key.csv")
+    if not os.path.exists(directory):
+        os.makedirs(directory) 
     for p in range(0, len(plist)):
         idval = str(plist.iloc[p, 1])
-        pitcherData(idval, directory)
+        pitcherData(idval, directory, season)
 
-## Ensure that ../data/pitchers/ exists!
-pullPitchingList(plist, "../data/pitchers/")
+pullPitchingList(plist, "../data/pitchers/", 2017)
 
 ## Now do batters
 blist = listIDs("batter")
 
-def pullBattingList(blist, directory):
+def pullBattingList(blist, directory, season):
+    blist.to_csv(directory + "player_key.csv")
+    if not os.path.exists(directory):
+        os.makedirs(directory) 
     for b in range(0, len(blist)):
         idval = str(blist.iloc[b, 1])
-        batterData(idval, directory)
-        
-## Ensure that ../data/batters/ exists!     
-pullBattingList(blist, "../data/batters/")
+        batterData(idval, directory, season)
+          
+pullBattingList(blist, "../data/batters/", 2017)
