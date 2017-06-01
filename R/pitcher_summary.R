@@ -8,7 +8,7 @@ library(xtable)
 
 datdir <- "../data/pitchers/"
 
-pfiles <- list.files(datdir)
+pfiles <- list.files(datdir, pattern = ".csv")
 
 ## Be patient with this line
 ## It reads in over 500 .csv files
@@ -35,6 +35,10 @@ dat$game_date <- as.Date(dat$game_date, "%m/%d/%y")
 
 pitches <- unique(dat$pitch_type)
 pitches <- pitches[!is.na(pitches)]
+pitches <- pitches[pitches != ""]
+pitches <- pitches[!pitches %in% c("IN", "EP", "PO", "FO", "AB", "UN")]
+
+dat <- dat[dat$pitch_type %in% pitches,]
 
 ptypes <- c("FF" = "Four Seam",
             "FT" = "Two Seam",
@@ -44,15 +48,16 @@ ptypes <- c("FF" = "Four Seam",
             "FC" = "Cutter",
             "SI" = "Sinker",
             "KN" = "Knuckleball",
-            "EP" = "Eephus",
-            "PO" = "Pitch Out",
+            #"EP" = "Eephus",
+            #"PO" = "Pitch Out",
             "FS" = "Fastball",
             "KC" = "Knucklecurve",
-            "UN" = "Unidentified",
-            "SC" = "SC",
-            "FO" = "Pitch Out",
-            "AB" = "AB",
-            "IN" = "IN")
+            #"UN" = "Unidentified",
+            "SC" = "SC"
+            #"FO" = "Pitch Out",
+            #"AB" = "AB",
+            #"IN" = "IN"
+            )
 
 colors <- palette(rainbow(length(ptypes)))
 
@@ -81,6 +86,7 @@ pitcherSummary <- function(dat, directory, pitcherid = NULL, pitcher = NULL){
     }
 
     tdat <- tdat[!is.na(tdat$pitch_type),]
+    tdat <- tdat[tdat$pitch_type != "",]
 
     ## release points for pitches over and under 90mph.
     pdf(paste0(pdir, "/plot1.pdf"))
@@ -95,19 +101,28 @@ pitcherSummary <- function(dat, directory, pitcherid = NULL, pitcher = NULL){
     xmax <- max(tdat$release_pos_x, na.rm = TRUE) + .25
     ymin <- min(tdat$release_pos_z, na.rm = TRUE) - .25
     ymax <- max(tdat$release_pos_z, na.rm = TRUE) + .25
-    plot(tdat$release_pos_x, tdat$release_pos_z, type = "p", xlim = c(xmin, xmax), ylim = c(ymin, ymax),
-         col = tdat$pitch_col, lwd = 5, xlab = "Horizontal Position", ylab = "Vertical Position")
     colors <- aggregate(pitch_col ~ pitch_type, data = tdat, function(x) names(table(x)))
-    legend("topright", colors[,"pitch_type"], col = colors[,"pitch_col"], pch = 1, lwd = 5)
+    means <- aggregate(cbind(release_pos_x, release_pos_z) ~ pitch_type, data = tdat, FUN = mean)
+    means <- merge(means, colors, by = "pitch_type", all = TRUE)
+    plot(means$release_pos_x, means$release_pos_z, type = "p", xlim = c(-6, 6), ylim = c(0, 8),
+         col = means$pitch_col, lwd = 20, xlab = "Horizontal Position", ylab = "Vertical Position")
+    legend("topright", means[,"pitch_type"], col = means[,"pitch_col"], pch = 1, lwd = 5)
     dev.off()
 
     ## Pitch proportions
-    ptable <- table(tdat$pitch_type)/nrow(tdat)
-    xtable(ptable)
+    ptable <- data.frame(table(tdat$pitch_type)/nrow(tdat))
+    pspeeds <- aggregate(release_speed ~ pitch_type, data = tdat, FUN = mean)
+    names(ptable) <- c("Type", "Percentage of Pitches")
+    names(pspeeds) <- c("Type", "Average Release Speed")
+    ptable <- merge(ptable, pspeeds, by = "Type")
+    ptable[,"Percentage of Pitches"] <- paste0(round(ptable[,"Percentage of Pitches"], 2)*100, "%")
+    ptable[,"Average Release Speed"] <- round(ptable[,"Average Release Speed"], 2)
+    t1 <- xtable(ptable)
+    print(t1, file = paste0(pdir, "/table1.tex"), include.rownames = FALSE, floating = FALSE)
 
     ## By count
     count <- expand.grid("balls" = unique(tdat$balls), "strikes" = unique(tdat$strikes))
-    count[,unique(ptypes)] <- NA
+    count[,unique(tdat$pitch_type)] <- NA
     count[,"N"] <- NA
     count <- count[!is.na(count$balls),]
     count <- count[!is.na(count$strikes),]
@@ -122,11 +137,43 @@ pitcherSummary <- function(dat, directory, pitcherid = NULL, pitcher = NULL){
     }
     count <- apply(count, c(1, 2), function(x) ifelse(is.na(x), 0, as.numeric(x)))
     count <- count[,!colMeans(count) == 0]
-    xtable(count)
+    count[,unique(tdat$pitch_type)] <- paste0(round(count[,unique(tdat$pitch_type)], 2)*100, "%")
+    count
+    t2 <- xtable(count)
+    print(t2, file = paste0(pdir, "/table2.tex"), include.rownames = FALSE, floating = FALSE)
 }
 
 pitcherSummary(dat, paste0(datdir, "plots/"), pitcher = "Madison Bumgarner")
 
+dat <- dat[!is.na(dat$player_name),]
+
 for (n in unique(dat$player_name)){
     pitcherSummary(dat, paste0(datdir, "plots/"), pitcher = n)
+}
+
+
+## Make tables for each team
+teamfiles <- list.files("../data/teaminfo", "_pitching.csv")
+
+teamdat <- lapply(paste0("../data/teaminfo/", teamfiles), read.csv, stringsAsFactors = FALSE)
+
+teamdat <- do.call("rbind.fill", teamdat)
+
+for (i in 1:nrow(teamdat)){
+    tmp <- teamdat$Name[i]
+    if (substr(tmp, 1, 5) == "Rank_"){
+        tmp <- "Rank_in"
+    }
+    teamdat$Name[i] <- strsplit(tmp, "_\\(")[[1]][1]
+}
+
+teamdat <- teamdat[!teamdat$Name %in% c("Team_Totals", "Rank_in"),]
+
+write.csv(teamdat, "../data/teamdat.csv")
+
+for (t in unique(teamdat$Team)){
+    usedat <- teamdat[teamdat$Team == t,]
+    usedat <- usedat[, c("Pos", "Name", "Age", "W", "L", "ERA", "G", "GS", "IP", "BB", "SO")]
+    xx <- xtable(usedat)
+    print(xx, file = paste0("../data/teaminfo/", t, ".tex"), include.rownames = FALSE, floating = FALSE)
 }
