@@ -29,6 +29,12 @@ names(dat) <- dnames
 dat$release_pos_x <- as.numeric(dat$release_pos_x)
 dat$release_pos_z <- as.numeric(dat$release_pos_z)
 
+dat$plate_x <- as.numeric(dat$plate_x)
+dat$plate_z <- as.numeric(dat$plate_z)
+
+dat$sz_top <- as.numeric(dat$sz_top)
+dat$sz_bot <- as.numeric(dat$sz_bot)
+
 dat$release_speed <- as.numeric(dat$release_speed)
 
 dat$game_date <- as.Date(dat$game_date, "%m/%d/%y")
@@ -61,7 +67,7 @@ ptypes <- c("FF" = "Four Seam",
 
 colors <- palette(rainbow(length(ptypes)))
 
-dat$pitch_col <- mapvalues(dat$pitch_type, pitches, colors)
+dat$pitch_col <- mapvalues(dat$pitch_type, ptypes, colors)
 
 dat$pitch_type <- mapvalues(dat$pitch_type, names(ptypes), ptypes)
 
@@ -85,9 +91,6 @@ pitcherSummary <- function(dat, directory, pitcherid = NULL, pitcher = NULL){
         dir.create(pdir)
     }
 
-    tdat <- tdat[!is.na(tdat$pitch_type),]
-    tdat <- tdat[tdat$pitch_type != "",]
-
     ## release points for pitches over and under 90mph.
     pdf(paste0(pdir, "/plot1.pdf"))
     plot(tdat$release_pos_x, tdat$release_pos_z, type = "p", xlim = c(-6, 6), ylim = c(0, 8),
@@ -107,6 +110,38 @@ pitcherSummary <- function(dat, directory, pitcherid = NULL, pitcher = NULL){
     plot(means$release_pos_x, means$release_pos_z, type = "p", xlim = c(-6, 6), ylim = c(0, 8),
          col = means$pitch_col, lwd = 20, xlab = "Horizontal Position", ylab = "Vertical Position")
     legend("topright", means[,"pitch_type"], col = means[,"pitch_col"], pch = 1, lwd = 5)
+    dev.off()
+
+    rdat <- tdat[tdat$stand == "R",]
+    ## Strike zone location
+    pdf(paste0(pdir, "/plot3.pdf"))
+    plot(rdat$plate_x, rdat$plate_z, type = "p", xlim = c(-2, 2), ylim = c(0, 4),
+         col = means$pitch_col, lwd = 1, xlab = "Horizontal Position", ylab = "Vertical Position",
+         main = "Right Handed Batters")
+    legend("topright", means[,"pitch_type"], col = means[,"pitch_col"], pch = 1, lwd = 5)
+    segments(x0 = -.75, y0 = 3.5, x1 = .75, y1 = 3.5, col = "black")
+    segments(x0 = -.75, y0 = 3.5, x1 = -.75, y1 = 1.5, col = "black")
+    segments(x0 = .75, y0 = 3.5, x1 = .75, y1 = 1.5, col = "black")
+    segments(x0 = -.75, y0 = 1.5, x1 = .75, y1 = 1.5, col = "black")
+    segments(x0 = -.75, y0 = 0, x1 = .75, y1 = 0, col = "black")
+    segments(x0 = -.75, y0 = 0, x1 = -.75, y1 = -1, col = "black")
+    segments(x0 = .75, y0 = 0, x1 = .75, y1 = -1, col = "black")
+    dev.off()
+
+    ldat <- tdat[tdat$stand == "L",]
+    ## Strike zone location
+    pdf(paste0(pdir, "/plot4.pdf"))
+    plot(ldat$plate_x, ldat$plate_z, type = "p", xlim = c(-2, 2), ylim = c(0, 4),
+         col = means$pitch_col, lwd = 1, xlab = "Horizontal Position", ylab = "Vertical Position",
+         main = "Left Handed Batters")
+    legend("topright", means[,"pitch_type"], col = means[,"pitch_col"], pch = 1, lwd = 5)
+    segments(x0 = -.75, y0 = 3.5, x1 = .75, y1 = 3.5, col = "black")
+    segments(x0 = -.75, y0 = 3.5, x1 = -.75, y1 = 1.5, col = "black")
+    segments(x0 = .75, y0 = 3.5, x1 = .75, y1 = 1.5, col = "black")
+    segments(x0 = -.75, y0 = 1.5, x1 = .75, y1 = 1.5, col = "black")
+    segments(x0 = -.75, y0 = 0, x1 = .75, y1 = 0, col = "black")
+    segments(x0 = -.75, y0 = 0, x1 = -.75, y1 = -1, col = "black")
+    segments(x0 = .75, y0 = 0, x1 = .75, y1 = -1, col = "black")
     dev.off()
 
     ## Pitch proportions
