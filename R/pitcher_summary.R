@@ -6,6 +6,8 @@ library(plyr)
 ## install.packages("xtable")
 library(xtable)
 
+library(ggplot2)
+
 datdir <- "../data/pitchers/"
 
 pfiles <- list.files(datdir, pattern = ".csv")
@@ -46,32 +48,25 @@ pitches <- pitches[!pitches %in% c("IN", "EP", "PO", "FO", "AB", "UN")]
 
 dat <- dat[dat$pitch_type %in% pitches,]
 
-ptypes <- c("FF" = "Four Seam",
-            "FT" = "Two Seam",
+ptypes <- c("FF" = "Fastball",
+            "FT" = "Fastball",
             "SL" = "Slider",
             "CH" = "Change-Up",
             "CU" = "Curveball",
             "FC" = "Cutter",
             "SI" = "Sinker",
             "KN" = "Knuckleball",
-            #"EP" = "Eephus",
-            #"PO" = "Pitch Out",
             "FS" = "Fastball",
             "KC" = "Knucklecurve",
-            #"UN" = "Unidentified",
             "SC" = "SC"
-            #"FO" = "Pitch Out",
-            #"AB" = "AB",
-            #"IN" = "IN"
             )
-
-colors <- palette(rainbow(length(ptypes)))
-
-dat$pitch_col <- mapvalues(dat$pitch_type, ptypes, colors)
 
 dat$pitch_type <- mapvalues(dat$pitch_type, names(ptypes), ptypes)
 
-pitcherSummary <- function(dat, directory, pitcherid = NULL, pitcher = NULL){
+colors <- palette(rainbow(length(unique(dat$pitch_type))))
+dat$pitch_col <- mapvalues(dat$pitch_type, unique(dat$pitch_type), colors)
+
+pitcherSummary <- function(dat, directory, pitcherid = NULL, pitcher = NULL, plots = NULL){
     if (!dir.exists(directory)){
         dir.create(directory)
     }
@@ -91,58 +86,78 @@ pitcherSummary <- function(dat, directory, pitcherid = NULL, pitcher = NULL){
         dir.create(pdir)
     }
 
+    if (isTRUE(plots)){
     ## release points for pitches over and under 90mph.
-    pdf(paste0(pdir, "/plot1.pdf"))
-    plot(tdat$release_pos_x, tdat$release_pos_z, type = "p", xlim = c(-6, 6), ylim = c(0, 8),
-         col = ifelse(tdat$release_speed > 90, "red", "blue"), xlab = "Horizontal Position", ylab = "Vertical Position")
-    dev.off()
+        pdf(paste0(pdir, "/plot1.pdf"))
+        plot(tdat$release_pos_x, tdat$release_pos_z, type = "p", xlim = c(-6, 6), ylim = c(0, 8),
+             col = ifelse(tdat$release_speed > 90, "red", "blue"), xlab = "Horizontal Position", ylab = "Vertical Position")
+        dev.off()
 
-    ## Zoom in on where pitches are typically released, then plot by type
-    pdf(paste0(pdir, "/plot2.pdf"))
-    ptypes <- unique(tdat$pitch_type)
-    xmin <- min(tdat$release_pos_x, na.rm = TRUE) - .25
-    xmax <- max(tdat$release_pos_x, na.rm = TRUE) + .25
-    ymin <- min(tdat$release_pos_z, na.rm = TRUE) - .25
-    ymax <- max(tdat$release_pos_z, na.rm = TRUE) + .25
-    colors <- aggregate(pitch_col ~ pitch_type, data = tdat, function(x) names(table(x)))
-    means <- aggregate(cbind(release_pos_x, release_pos_z) ~ pitch_type, data = tdat, FUN = mean)
-    means <- merge(means, colors, by = "pitch_type", all = TRUE)
-    plot(means$release_pos_x, means$release_pos_z, type = "p", xlim = c(-6, 6), ylim = c(0, 8),
-         col = means$pitch_col, lwd = 20, xlab = "Horizontal Position", ylab = "Vertical Position")
-    legend("topright", means[,"pitch_type"], col = means[,"pitch_col"], pch = 1, lwd = 5)
-    dev.off()
+        ## Zoom in on where pitches are typically released, then plot by type
+        pdf(paste0(pdir, "/plot2.pdf"))
+        ptypes <- unique(tdat$pitch_type)
+        xmin <- min(tdat$release_pos_x, na.rm = TRUE) - .25
+        xmax <- max(tdat$release_pos_x, na.rm = TRUE) + .25
+        ymin <- min(tdat$release_pos_z, na.rm = TRUE) - .25
+        ymax <- max(tdat$release_pos_z, na.rm = TRUE) + .25
+        colors <- aggregate(pitch_col ~ pitch_type, data = tdat, function(x) names(table(x)))
+        means <- aggregate(cbind(release_pos_x, release_pos_z) ~ pitch_type, data = tdat, FUN = mean)
+        means <- merge(means, colors, by = "pitch_type", all = TRUE)
+        plot(means$release_pos_x, means$release_pos_z, type = "p", xlim = c(-6, 6), ylim = c(0, 8),
+             col = means$pitch_col, lwd = 20, xlab = "Horizontal Position", ylab = "Vertical Position")
+        legend("topright", means[,"pitch_type"], col = means[,"pitch_col"], pch = 1, lwd = 5)
+        dev.off()
 
-    rdat <- tdat[tdat$stand == "R",]
-    ## Strike zone location
-    pdf(paste0(pdir, "/plot3.pdf"))
-    plot(rdat$plate_x, rdat$plate_z, type = "p", xlim = c(-2, 2), ylim = c(0, 4),
-         col = means$pitch_col, lwd = 1, xlab = "Horizontal Position", ylab = "Vertical Position",
-         main = "Right Handed Batters")
-    legend("topright", means[,"pitch_type"], col = means[,"pitch_col"], pch = 1, lwd = 5)
-    segments(x0 = -.75, y0 = 3.5, x1 = .75, y1 = 3.5, col = "black")
-    segments(x0 = -.75, y0 = 3.5, x1 = -.75, y1 = 1.5, col = "black")
-    segments(x0 = .75, y0 = 3.5, x1 = .75, y1 = 1.5, col = "black")
-    segments(x0 = -.75, y0 = 1.5, x1 = .75, y1 = 1.5, col = "black")
-    segments(x0 = -.75, y0 = 0, x1 = .75, y1 = 0, col = "black")
-    segments(x0 = -.75, y0 = 0, x1 = -.75, y1 = -1, col = "black")
-    segments(x0 = .75, y0 = 0, x1 = .75, y1 = -1, col = "black")
-    dev.off()
+        rdat <- tdat[tdat$stand == "R",]
+        ## Strike zone location
+                                        #pdf(paste0(pdir, "/plot3.pdf"))
+                                        #plot(rdat$plate_x, rdat$plate_z, type = "p", xlim = c(-2, 2), ylim = c(0, 4),
+                                        #     col = means$pitch_col, lwd = 1, xlab = "Horizontal Position", ylab = "Vertical Position",
+                                        #     main = "Right Handed Batters")
+                                        #legend("topright", means[,"pitch_type"], col = means[,"pitch_col"], pch = 1, lwd = 5)
+                                        #segments(x0 = -.75, y0 = 3.5, x1 = .75, y1 = 3.5, col = "black")
+                                        #segments(x0 = -.75, y0 = 3.5, x1 = -.75, y1 = 1.5, col = "black")
+                                        #segments(x0 = .75, y0 = 3.5, x1 = .75, y1 = 1.5, col = "black")
+                                        #segments(x0 = -.75, y0 = 1.5, x1 = .75, y1 = 1.5, col = "black")
+                                        #segments(x0 = -.75, y0 = 0, x1 = .75, y1 = 0, col = "black")
+                                        #segments(x0 = -.75, y0 = 0, x1 = -.75, y1 = -1, col = "black")
+                                        #segments(x0 = .75, y0 = 0, x1 = .75, y1 = -1, col = "black")
+                                        #dev.off()
 
-    ldat <- tdat[tdat$stand == "L",]
-    ## Strike zone location
-    pdf(paste0(pdir, "/plot4.pdf"))
-    plot(ldat$plate_x, ldat$plate_z, type = "p", xlim = c(-2, 2), ylim = c(0, 4),
-         col = means$pitch_col, lwd = 1, xlab = "Horizontal Position", ylab = "Vertical Position",
-         main = "Left Handed Batters")
-    legend("topright", means[,"pitch_type"], col = means[,"pitch_col"], pch = 1, lwd = 5)
-    segments(x0 = -.75, y0 = 3.5, x1 = .75, y1 = 3.5, col = "black")
-    segments(x0 = -.75, y0 = 3.5, x1 = -.75, y1 = 1.5, col = "black")
-    segments(x0 = .75, y0 = 3.5, x1 = .75, y1 = 1.5, col = "black")
-    segments(x0 = -.75, y0 = 1.5, x1 = .75, y1 = 1.5, col = "black")
-    segments(x0 = -.75, y0 = 0, x1 = .75, y1 = 0, col = "black")
-    segments(x0 = -.75, y0 = 0, x1 = -.75, y1 = -1, col = "black")
-    segments(x0 = .75, y0 = 0, x1 = .75, y1 = -1, col = "black")
-    dev.off()
+        ggplot(rdat,aes(x=plate_x,y=plate_z)) + stat_binhex() +
+            labs(x = "") + labs(y = "") + ggtitle("Right Handed Batters") + guides(colour = FALSE) +
+            theme(plot.title = element_text(hjust = 0.5)) + ylim(0,4) + xlim(-2,2) +
+            geom_segment(aes(x = -.71, y = 3.5, xend = .71, yend = 3.5, colour = "red"), data = rdat) +
+            geom_segment(aes(x = .71, y = 3.5, xend = .71, yend = 1.5, colour = "red"), data = rdat) +
+            geom_segment(aes(x = -.71, y = 1.5, xend = .71, yend = 1.5, colour = "red"), data = rdat) +
+            geom_segment(aes(x = -.71, y = 1.5, xend = -.71, yend = 3.5, colour = "red"), data = rdat)
+        ggsave(paste0(pdir, "/plot3.pdf"))
+
+        ldat <- tdat[tdat$stand == "L",]
+        ## Strike zone location
+                                        #pdf(paste0(pdir, "/plot4.pdf"))
+                                        #plot(ldat$plate_x, ldat$plate_z, type = "p", xlim = c(-2, 2), ylim = c(0, 4),
+                                        #     col = means$pitch_col, lwd = 1, xlab = "Horizontal Position", ylab = "Vertical Position",
+                                        #     main = "Left Handed Batters")
+                                        #legend("topright", means[,"pitch_type"], col = means[,"pitch_col"], pch = 1, lwd = 5)
+                                        #segments(x0 = -.75, y0 = 3.5, x1 = .75, y1 = 3.5, col = "black")
+                                        #segments(x0 = -.75, y0 = 3.5, x1 = -.75, y1 = 1.5, col = "black")
+                                        #segments(x0 = .75, y0 = 3.5, x1 = .75, y1 = 1.5, col = "black")
+                                        #segments(x0 = -.75, y0 = 1.5, x1 = .75, y1 = 1.5, col = "black")
+                                        #segments(x0 = -.75, y0 = 0, x1 = .75, y1 = 0, col = "black")
+                                        #segments(x0 = -.75, y0 = 0, x1 = -.75, y1 = -1, col = "black")
+                                        #segments(x0 = .75, y0 = 0, x1 = .75, y1 = -1, col = "black")
+                                        #dev.off()
+
+        ggplot(ldat,aes(x=plate_x,y=plate_z)) + stat_binhex() +
+            labs(x = "") + labs(y = "") + ggtitle("Left Handed Batters") + guides(colour = FALSE) +
+            theme(plot.title = element_text(hjust = 0.5)) + ylim(0,4) + xlim(-2,2) +
+            geom_segment(aes(x = -.71, y = 3.5, xend = .71, yend = 3.5, colour = "red"), data = ldat) +
+            geom_segment(aes(x = .71, y = 3.5, xend = .71, yend = 1.5, colour = "red"), data = ldat) +
+            geom_segment(aes(x = -.71, y = 1.5, xend = .71, yend = 1.5, colour = "red"), data = ldat) +
+            geom_segment(aes(x = -.71, y = 1.5, xend = -.71, yend = 3.5, colour = "red"), data = ldat)
+        ggsave(paste0(pdir, "/plot4.pdf"))
+    }
 
     ## Pitch proportions
     ptable <- data.frame(table(tdat$pitch_type)/nrow(tdat))
@@ -157,8 +172,8 @@ pitcherSummary <- function(dat, directory, pitcherid = NULL, pitcher = NULL){
 
     ## By count
     count <- expand.grid("balls" = unique(tdat$balls), "strikes" = unique(tdat$strikes))
+    count[,"Number of Pitches"] <- NA
     count[,unique(tdat$pitch_type)] <- NA
-    count[,"N"] <- NA
     count <- count[!is.na(count$balls),]
     count <- count[!is.na(count$strikes),]
     row.names(count) <- seq(1, nrow(count))
@@ -168,14 +183,32 @@ pitcherSummary <- function(dat, directory, pitcherid = NULL, pitcher = NULL){
         thrown <- tdat[(tdat$balls == balls) & (tdat$strikes == strikes), "pitch_type"]
         xx <- table(thrown)/length(thrown)
         count[i, names(xx)] <- xx
-        count[i, "N"] <- length(thrown)
+        count[i, "Number of Pitches"] <- length(thrown)
     }
     count <- apply(count, c(1, 2), function(x) ifelse(is.na(x), 0, as.numeric(x)))
-    count <- count[,!colMeans(count) == 0]
+    #count <- count[,!colMeans(count) == 0]
     count[,unique(tdat$pitch_type)] <- paste0(round(count[,unique(tdat$pitch_type)], 2)*100, "%")
-    count
-    t2 <- xtable(count)
+    countdat <- data.frame(count, stringsAsFactors = FALSE)
+    countdat <- countdat[order(countdat[,c("balls")]),]
+    countdat <- countdat[order(countdat[,c("strikes")]),]
+    countinfo <- paste0(countdat[,"balls"], "-", countdat[,"strikes"])
+    countdat$balls <- NULL
+    countdat$strikes <- NULL
+    countdat <- data.frame(Count = countinfo, countdat)
+    t2 <- xtable(countdat)
     print(t2, file = paste0(pdir, "/table2.tex"), include.rownames = FALSE, floating = FALSE)
+
+    ##bb type
+    bbdat <- tdat[tdat$bb_type %in% c("ground_ball", "fly_ball", "line_drive", "popup"),]
+    if (nrow(bbdat) > 0){
+        b3 <- table(bbdat$bb_type)/nrow(bbdat)
+        b3 <- data.frame(b3, stringsAsFactors = FALSE)
+        names(b3) <- c("Hit Type", "Percentage of Balls in Play")
+        b3[,"Hit Type"] <- gsub("_", " ", b3[,"Hit Type"])
+        b3[,"Percentage of Balls in Play"] <- paste0(round(b3[,"Percentage of Balls in Play"], 2)*100, "%")
+        t3 <- xtable(b3)
+        print(t3, file = paste0(pdir, "/table3.tex"), include.rownames = FALSE, floating = FALSE)
+    }
 }
 
 pitcherSummary(dat, paste0(datdir, "plots/"), pitcher = "Madison Bumgarner")
@@ -183,9 +216,10 @@ pitcherSummary(dat, paste0(datdir, "plots/"), pitcher = "Madison Bumgarner")
 dat <- dat[!is.na(dat$player_name),]
 
 for (n in unique(dat$player_name)){
-    pitcherSummary(dat, paste0(datdir, "plots/"), pitcher = n)
+    pitcherSummary(dat, paste0(datdir, "plots/"), pitcher = n, plots = FALSE)
 }
 
+fnames <- unique(dat$player_name)
 
 ## Make tables for each team
 teamfiles <- list.files("../data/teaminfo", "_pitching.csv")
@@ -194,13 +228,27 @@ teamdat <- lapply(paste0("../data/teaminfo/", teamfiles), read.csv, stringsAsFac
 
 teamdat <- do.call("rbind.fill", teamdat)
 
+teamdat$Name2 <- NA
 for (i in 1:nrow(teamdat)){
     tmp <- teamdat$Name[i]
     if (substr(tmp, 1, 5) == "Rank_"){
         tmp <- "Rank_in"
     }
     teamdat$Name[i] <- strsplit(tmp, "_\\(")[[1]][1]
+    teamdat$Name2[i] <- gsub("_", " ", teamdat$Name[i])
 }
+
+tdnames <- unique(teamdat$Name2)
+
+tdnames[!tdnames %in% fnames]
+fnames[!fnames %in% tdnames]
+
+mapnames <- fnames[!fnames %in% tdnames]
+mapnames <- gsub(" ", "_", mapnames)
+names(mapnames) <- c("Seung-hwan_Oh", "J.C._Ramirez", "Greg_Infante", "Nate_Karns", "Robbie_Ross", "Robert_Whalen",
+                     "Carl_Edwards", "Matthew_Bowman")
+
+teamdat$Name <- mapvalues(teamdat$Name, names(mapnames), mapnames)
 
 teamdat <- teamdat[!teamdat$Name %in% c("Team_Totals", "Rank_in"),]
 
@@ -209,6 +257,12 @@ write.csv(teamdat, "../data/teamdat.csv")
 for (t in unique(teamdat$Team)){
     usedat <- teamdat[teamdat$Team == t,]
     usedat <- usedat[, c("Pos", "Name", "Age", "W", "L", "ERA", "G", "GS", "IP", "BB", "SO")]
+    for (i in 1:nrow(usedat)){
+        pname <- usedat[i,"Name"]
+        pname <- gsub("_", " ", pname)
+        #insert <- paste0("\\ref[", pname, "]{", pname, "}")
+        usedat[i, "Name"] <- pname
+    }
     xx <- xtable(usedat)
     print(xx, file = paste0("../data/teaminfo/", t, ".tex"), include.rownames = FALSE, floating = FALSE)
 }
