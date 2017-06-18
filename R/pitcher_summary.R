@@ -45,21 +45,20 @@ dat$game_date <- as.Date(dat$game_date, "%m/%d/%y")
 pitches <- unique(dat$pitch_type)
 pitches <- pitches[!is.na(pitches)]
 pitches <- pitches[pitches != ""]
-pitches <- pitches[!pitches %in% c("IN", "EP", "PO", "FO", "AB", "UN")]
+pitches <- pitches[!pitches %in% c("IN", "EP", "PO", "FO", "AB", "UN", "SC")]
 
 dat <- dat[dat$pitch_type %in% pitches,]
 
-ptypes <- c("FF" = "Four Seam",
-            "FT" = "Two Seam",
+ptypes <- c("FF" = "Four_Seam",
+            "FT" = "Two_Seam",
             "SL" = "Slider",
-            "CH" = "Change-Up",
+            "CH" = "Change_Up",
             "CU" = "Curveball",
             "FC" = "Cutter",
             "SI" = "Sinker",
             "KN" = "Knuckleball",
             "FS" = "Fastball",
-            "KC" = "Knucklecurve",
-            "SC" = "SC"
+            "KC" = "Knucklecurve"
             )
 
 dat$pitch_type <- mapvalues(dat$pitch_type, names(ptypes), ptypes)
@@ -67,7 +66,67 @@ dat$pitch_type <- mapvalues(dat$pitch_type, names(ptypes), ptypes)
 colors <- rainbow(n = length(unique(dat$pitch_type)))
 dat$pitch_col <- mapvalues(dat$pitch_type, unique(dat$pitch_type), colors)
 
-pitcherSummary <- function(dat, directory, pitcherid = NULL, pitcher = NULL, plots = NULL){
+## Rankings by speed
+sumdat <- dat
+p2 <- unique(sumdat$pitch_type)
+means <- paste0("avg_speed_", p2)
+names(means) <- p2
+for (p in p2){
+    sumdat[,paste0("avg_speed_", p)] <- ifelse(sumdat$pitch_type == p, sumdat$release_speed, NA)
+}
+players <- unique(sumdat$player_name)
+plist <- list()
+for (p in players){
+    xx <- sumdat[which(sumdat$player_name == p),c(6, 89:98)]
+    tmp <- t(colMeans(xx[,2:ncol(xx)], na.rm = TRUE))
+    plist[[p]] <- data.frame(p, tmp)
+}
+pranks <- do.call("rbind.fill", plist)
+names(pranks) <- c("player_name", p2)
+pranks[order(pranks$Four_Seam, decreasing = TRUE),]
+for (p in p2){
+    pranks <- pranks[order(pranks[,p], decreasing = TRUE), ]
+    pranks[,paste0(p, "speed_rank")] <- seq(1, nrow(pranks))
+    pranks[,paste0(p, "speed_rank")] <- ifelse(is.na(pranks[,p]), NA, pranks[,paste0(p, "speed_rank")])
+    pranks[,paste0(p, "speed_%")] <- pranks[,paste0(p, "speed_rank")]/sum(!is.na(pranks[,paste0(p, "speed_rank")]))
+    pranks[,paste0(p, "speed_%")] <- paste0(100*round(1 - pranks[,paste0(p, "speed_%")], 2), "%")
+}
+
+head(pranks)
+
+
+## Rankings by spinrate
+means <- paste0("avg_spin_", p2)
+names(means) <- p2
+for (p in p2){
+    sumdat[,paste0("avg_spin_", p)] <- ifelse(sumdat$pitch_type == p, sumdat$release_spin_rate, NA)
+}
+players <- unique(sumdat$player_name)
+plist <- list()
+for (p in players){
+    xx <- sumdat[which(sumdat$player_name == p),c(6, 99:108)]
+    tmp <- t(colMeans(xx[,2:ncol(xx)], na.rm = TRUE))
+    plist[[p]] <- data.frame(p, tmp)
+}
+spinrates <- do.call("rbind.fill", plist)
+names(spinrates) <- c("player_name", p2)
+
+for (p in p2){
+    spinrates <- spinrates[order(spinrates[,p], decreasing = TRUE), ]
+    spinrates[,paste0(p, "spin_rank")] <- seq(1, nrow(spinrates))
+    spinrates[,paste0(p, "spin_rank")] <- ifelse(is.na(spinrates[,p]), NA, spinrates[,paste0(p, "spin_rank")])
+    spinrates[,paste0(p, "spin_%")] <- spinrates[,paste0(p, "spin_rank")]/sum(!is.na(spinrates[,paste0(p, "spin_rank")]))
+    spinrates[,paste0(p, "spin_%")] <- paste0(100*round(1 - spinrates[,paste0(p, "spin_%")], 2), "%")
+}
+
+names(spinrates)
+head(spinrates)
+
+speedranks <- pranks
+spinranks <- spinrates
+
+
+pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NULL, pitcher = NULL, plots = NULL){
     if (!dir.exists(directory)){
         dir.create(directory)
     }
@@ -181,20 +240,26 @@ pitcherSummary <- function(dat, directory, pitcherid = NULL, pitcher = NULL, plo
     }
 
     ## Pitch proportions
+
+    speedinfo <- speedranks[which(speedranks$player_name == pitcher),]
+    spininfo <- spinranks[which(spinranks$player_name == pitcher),]
+
     ptable <- data.frame(table(tdat$pitch_type)/nrow(tdat), stringsAsFactors = FALSE)
     ptable$Var1 <- levels(ptable$Var1)
     pspeeds <- aggregate(release_speed ~ pitch_type, data = tdat, FUN = mean)
     pspins <- aggregate(release_spin_rate ~ pitch_type, data = tdat, FUN = mean, na.rm = TRUE)
-    names(ptable) <- c("Type", "Percentage of Pitches")
-    names(pspeeds) <- c("Type", "Average Release Speed")
-    names(pspins) <- c("Type", "Average Spin Rate")
+    names(ptable) <- c("Type", "% of Pitches")
+    names(pspeeds) <- c("Type", "Average Release Speed (%tile)")
+    names(pspins) <- c("Type", "Average Spin Rate (%tile)")
     ptable <- merge(ptable, pspeeds, by = "Type")
     ptable <- merge(ptable, pspins, by = "Type")
-    ptable <- ptable[order(ptable[,"Percentage of Pitches"], decreasing = TRUE),]
-    ptable[,"Percentage of Pitches"] <- paste0(round(ptable[,"Percentage of Pitches"], 2)*100, "%")
-    ptable[,"Average Release Speed"] <- round(ptable[,"Average Release Speed"], 2)
-    ptable[,"Average Spin Rate"] <- round(ptable[,"Average Spin Rate"], 2)
-    t1 <- xtable(ptable)
+    ptable <- ptable[order(ptable[,"% of Pitches"], decreasing = TRUE),]
+    ptable[,"% of Pitches"] <- paste0(round(ptable[,"% of Pitches"], 2)*100, "%")
+    ptable[,"Average Release Speed (%tile)"] <- paste0(round(ptable[,"Average Release Speed (%tile)"], 2), "(", speedinfo[,paste0(ptable$Type, "speed_%")], ")")
+    ptable[,"Average Spin Rate (%tile)"] <- paste0(round(ptable[,"Average Spin Rate (%tile)"], 2), "(", spininfo[,paste0(ptable$Type, "spin_%")], ")")
+    tmpptable <- ptable
+    tmpptable[,"Type"] <- gsub("_", " ", tmpptable[,"Type"])
+    t1 <- xtable(tmpptable, align = c("l", rep("r", ncol(tmpptable))))
     print(t1, file = paste0(pdir, "/table1.tex"), include.rownames = FALSE, floating = FALSE)
 
     ## By count
@@ -239,12 +304,12 @@ pitcherSummary <- function(dat, directory, pitcherid = NULL, pitcher = NULL, plo
     }
 }
 
-pitcherSummary(dat, paste0(datdir, "plots/"), pitcher = "Madison Bumgarner")
+pitcherSummary(dat, paste0(datdir, "plots/"), speedranks = speedranks, spinranks = spinranks, pitcher = "Madison Bumgarner")
 
 dat <- dat[!is.na(dat$player_name),]
 
 for (n in unique(dat$player_name)){
-    pitcherSummary(dat, paste0(datdir, "plots/"), pitcher = n, plots = TRUE)
+    pitcherSummary(dat, paste0(datdir, "plots/"), speedranks = speedranks, spinranks = spinranks, pitcher = n, plots = FALSE)
 }
 
 fnames <- unique(dat$player_name)
