@@ -8,6 +8,8 @@ library(xtable)
 
 library(ggplot2)
 
+library(shape)
+
 datdir <- "../data/pitchers/"
 
 pfiles <- list.files(datdir, pattern = ".csv")
@@ -159,7 +161,7 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
              col = ifelse(tdat$release_speed > 90, "red", "blue"), xlab = "Horizontal Position", ylab = "Vertical Position")
         dev.off()
 
-        ## Zoom in on where pitches are typically released, then plot by type
+        ## Compare release points by pitch type
         pdf(paste0(pdir, "/plot2.pdf"))
         ptypes <- unique(tdat$pitch_type)
         xmin <- min(tdat$release_pos_x, na.rm = TRUE) - .25
@@ -169,9 +171,18 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
         colors <- aggregate(pitch_col ~ pitch_type, data = tdat, function(x) names(table(x)))
         means <- aggregate(cbind(release_pos_x, release_pos_z) ~ pitch_type, data = tdat, FUN = mean)
         means <- merge(means, colors, by = "pitch_type", all = TRUE)
-        plot(means$release_pos_x, means$release_pos_z, type = "p", xlim = c(-6, 6), ylim = c(0, 8),
-             col = means$pitch_col, lwd = 20, xlab = "Horizontal Position", ylab = "Vertical Position")
-        legend("topright", means[,"pitch_type"], col = means[,"pitch_col"], pch = 1, lwd = 5)
+        plot(means$release_pos_x, means$release_pos_z, type = "p", xlim = c(-10, 10), ylim = c(-4, 10),
+             col = means$pitch_col, lwd = 2, xlab = NA, ylab = NA, axes = FALSE,
+             main = "Approximation of Release Points")
+        box()
+        lines(x = c(-2, 2), y = c(-2, -2))
+        lines(x = c(-2, -2.2), y = c(-2, -2.5))
+        lines(x = c(2, 2.2), y = c(-2, -2.5))
+        lines(x = c(2.2, 0), y = c(-2.5, -3))
+        lines(x = c(-2.2, 0), y = c(-2.5, -3))
+        plotellipse(mid = c(0, 1.17), rx = 9, ry = .75, col = "burlywood")
+        filledrectangle(mid = c(0, 1.25), wx = 2, wy = .1, col = "white")
+        legend("topright", means[,"pitch_type"], col = means[,"pitch_col"], pch = 1, lwd = 2)
         dev.off()
 
         rdat <- tdat[tdat$stand == "R",]
@@ -288,6 +299,7 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
     countdat$strikes <- NULL
     countdat <- data.frame(Count = countinfo, countdat)
     names(countdat) <- sapply(names(countdat), function(x) gsub("\\.", " ", x))
+    names(countdat) <- sapply(names(countdat), function(x) gsub("_", " ", x))
     t2 <- xtable(countdat)
     print(t2, file = paste0(pdir, "/table2.tex"), include.rownames = FALSE, floating = FALSE)
 
