@@ -171,7 +171,7 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
         colors <- aggregate(pitch_col ~ pitch_type, data = tdat, function(x) names(table(x)))
         means <- aggregate(cbind(release_pos_x, release_pos_z) ~ pitch_type, data = tdat, FUN = mean)
         means <- merge(means, colors, by = "pitch_type", all = TRUE)
-        plot(means$release_pos_x, means$release_pos_z, type = "p", xlim = c(-10, 10), ylim = c(-4, 10),
+        plot(means$release_pos_x, means$release_pos_z, type = "p", xlim = c(-8, 8), ylim = c(-4, 8),
              col = means$pitch_col, lwd = 2, xlab = NA, ylab = NA, axes = FALSE,
              main = "Approximation of Release Points")
         box()
@@ -201,20 +201,22 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
         #segments(x0 = .75, y0 = 0, x1 = .75, y1 = -1, col = "black")
         #dev.off()
 
-        ggplot(rdat,aes(x=plate_x,y=plate_z)) + stat_binhex() +
+        ggplot(rdat, aes(x=plate_x,y=plate_z)) + stat_binhex() +
             labs(x = "") + labs(y = "") + ggtitle("Right Handed Batters") + guides(colour = FALSE) +
-            theme(plot.title = element_text(hjust = 0.5)) + ylim(-1,4) + xlim(-2,2) +
-
-            geom_segment(aes(x = -.71, y = 0, xend = .71, yend = 0), color = "black", data = ldat) +
-            geom_segment(aes(x = -.71, y = 0, xend = -.75, yend = -.5), color = "black", data = ldat) +
-            geom_segment(aes(x = .71, y = 0, xend = .75, yend = -.5), color = "black", data = ldat) +
-            geom_segment(aes(x = -.75, y = -.5, xend = 0, yend = -.75), color = "black", data = ldat) +
-            geom_segment(aes(x = .75, y = -.5, xend = 0, yend = -.75), color = "black", data = ldat) +
-
-            geom_segment(aes(x = -.71, y = 3.5, xend = .71, yend = 3.5), color = "red", data = ldat, size = 3) +
-            geom_segment(aes(x = .71, y = 3.5, xend = .71, yend = 1.5), color = "red", data = ldat, size = 3) +
-            geom_segment(aes(x = -.71, y = 1.5, xend = .71, yend = 1.5), color = "red", data = ldat, size = 3) +
-            geom_segment(aes(x = -.71, y = 1.5, xend = -.71, yend = 3.5), color = "red", data = ldat, size = 3)
+            theme(plot.title = element_text(hjust = 0.5, size=22), panel.grid.major = element_blank(),
+                  panel.grid.minor = element_blank(),
+                  panel.background = element_blank(), axis.line = element_blank(), axis.text = element_blank(),
+                  axis.ticks = element_blank()) +
+            ylim(-1,5) + xlim(-2.5,2.5) +
+            geom_segment(aes(x = -.71, y = 0, xend = .71, yend = 0), color = "black", data = rdat) +
+            geom_segment(aes(x = -.71, y = 0, xend = -.75, yend = -.5), color = "black", data = rdat) +
+            geom_segment(aes(x = .71, y = 0, xend = .75, yend = -.5), color = "black", data = rdat) +
+            geom_segment(aes(x = -.75, y = -.5, xend = 0, yend = -.75), color = "black", data = rdat) +
+            geom_segment(aes(x = .75, y = -.5, xend = 0, yend = -.75), color = "black", data = rdat) +
+            geom_segment(aes(x = -.71, y = 3.5, xend = .71, yend = 3.5), color = "red", data = rdat, size = 3) +
+            geom_segment(aes(x = .71, y = 3.5, xend = .71, yend = 1.5), color = "red", data = rdat, size = 3) +
+            geom_segment(aes(x = -.71, y = 1.5, xend = .71, yend = 1.5), color = "red", data = rdat, size = 3) +
+            geom_segment(aes(x = -.71, y = 1.5, xend = -.71, yend = 3.5), color = "red", data = rdat, size = 3)
         ggsave(paste0(pdir, "/plot3.pdf"))
 
         ldat <- tdat[tdat$stand == "L",]
@@ -235,7 +237,11 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
 
         ggplot(ldat,aes(x=plate_x,y=plate_z)) + stat_binhex() +
             labs(x = "") + labs(y = "") + ggtitle("Left Handed Batters") + guides(colour = FALSE) +
-            theme(plot.title = element_text(hjust = 0.5)) + ylim(-1,4) + xlim(-2,2) +
+            theme(plot.title = element_text(hjust = 0.5, size=22), panel.grid.major = element_blank(),
+                  panel.grid.minor = element_blank(),
+                  panel.background = element_blank(), axis.line = element_blank(), axis.text = element_blank(),
+                  axis.ticks = element_blank()) +
+            ylim(-1,5) + xlim(-2.5,2.5) +
             geom_segment(aes(x = -.71, y = 0, xend = .71, yend = 0), color = "black", data = ldat) +
             geom_segment(aes(x = -.71, y = 0, xend = -.75, yend = -.5), color = "black", data = ldat) +
             geom_segment(aes(x = .71, y = 0, xend = .75, yend = -.5), color = "black", data = ldat) +
@@ -300,7 +306,7 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
     countdat <- data.frame(Count = countinfo, countdat)
     names(countdat) <- sapply(names(countdat), function(x) gsub("\\.", " ", x))
     names(countdat) <- sapply(names(countdat), function(x) gsub("_", " ", x))
-    t2 <- xtable(countdat)
+    t2 <- xtable(countdat, align = c("l", rep("r", ncol(countdat))))
     print(t2, file = paste0(pdir, "/table2.tex"), include.rownames = FALSE, floating = FALSE)
 
     ##bb type
@@ -311,7 +317,7 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
         names(b3) <- c("Hit Type", "Percentage of Balls in Play")
         b3[,"Hit Type"] <- gsub("_", " ", b3[,"Hit Type"])
         b3[,"Percentage of Balls in Play"] <- paste0(round(b3[,"Percentage of Balls in Play"], 2)*100, "%")
-        t3 <- xtable(b3)
+        t3 <- xtable(b3, align = c("l", rep("r", ncol(b3))))
         print(t3, file = paste0(pdir, "/table3.tex"), include.rownames = FALSE, floating = FALSE)
     }
 }
