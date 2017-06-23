@@ -379,6 +379,13 @@ for (t in unique(teamdat$Team)){
         #insert <- paste0("\\ref[", pname, "]{", pname, "}")
         usedat[i, "Name"] <- pname
     }
+    usedat <- unique(usedat)
+    starters <- usedat[usedat$Pos == "SP",]
+    closers <- usedat[usedat$Pos == "CL",]
+    relievers <- usedat[usedat$Pos == "RP",]
+    others <- usedat[!usedat$Pos %in% c("SP", "CL", "RP"),]
+    others <- others[order(others$ERA),]
+    usedat <- rbind(starters, closers, relievers, others)
     usedat[,"Age"] <- as.character(usedat[,"Age"])
     xx <- xtable(usedat)
     print(xx, file = paste0("../data/teaminfo/", t, ".tex"), include.rownames = FALSE, floating = FALSE)
