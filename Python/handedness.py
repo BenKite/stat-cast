@@ -69,6 +69,6 @@ for t in teams:
 
 handedness = pandas.concat(dat)
 
-handedness.to_csv("handedness.csv")
+handedness.to_csv("../data/pitchers/handedness.csv")
 
-    
+

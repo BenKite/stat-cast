@@ -12,7 +12,7 @@ library(shape)
 
 datdir <- "../data/pitchers/"
 
-pfiles <- list.files(datdir, pattern = ".csv")
+pfiles <- list.files(datdir, pattern = "2017.csv")
 
 ## Be patient with this line
 ## It reads in over 500 .csv files
