@@ -39,8 +39,8 @@ header <-"
 \\author{Ben Kite}
 \\maketitle
 
- This document contains basic information summarizing all pitchers on MLB rosters in 2017.
-All data are from pitches thrown in 2016 and 2017 captured by Statcast.
+This document contains basic information summarizing all pitchers on MLB rosters in 2017.
+All data are from pitches thrown in 2017 captured by Statcast. The data were collected from baseballsavant.mlb.com.
 Currently, each pitcher has two pages in the report.
 The first page contains tables summarizing the types of pitches each player has thrown, how often, average release speed, and average spin rate.
 The averages for release speed and spin rate also have the pitcher's percentile reported for reference.
