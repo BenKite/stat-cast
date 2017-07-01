@@ -66,6 +66,7 @@ ptypes <- c("FF" = "Four_Seam",
 dat$pitch_type <- mapvalues(dat$pitch_type, names(ptypes), ptypes)
 
 colors <- rainbow(n = length(unique(dat$pitch_type)))
+colors <- c("red", "orange", "yellow", "purple", "green", "pink", "blue", "gray", "black", "brown")
 dat$pitch_col <- mapvalues(dat$pitch_type, unique(dat$pitch_type), colors)
 
 ## Rankings by speed
@@ -76,13 +77,16 @@ names(means) <- p2
 for (p in p2){
     sumdat[,paste0("avg_speed_", p)] <- ifelse(sumdat$pitch_type == p, sumdat$release_speed, NA)
 }
+
 players <- unique(sumdat$player_name)
 plist <- list()
+
 for (p in players){
-    xx <- sumdat[which(sumdat$player_name == p),c(6, 89:98)]
+    xx <- sumdat[which(sumdat$player_name == p),c("player_name", grep("avg_speed_", names(sumdat), value = TRUE))]
     tmp <- t(colMeans(xx[,2:ncol(xx)], na.rm = TRUE))
     plist[[p]] <- data.frame(p, tmp)
 }
+
 pranks <- do.call("rbind.fill", plist)
 names(pranks) <- c("player_name", p2)
 pranks[order(pranks$Four_Seam, decreasing = TRUE),]
@@ -106,7 +110,7 @@ for (p in p2){
 players <- unique(sumdat$player_name)
 plist <- list()
 for (p in players){
-    xx <- sumdat[which(sumdat$player_name == p),c(6, 99:108)]
+    xx <- sumdat[which(sumdat$player_name == p), c("player_name", grep("avg_spin_", names(sumdat), value = TRUE))]
     tmp <- t(colMeans(xx[,2:ncol(xx)], na.rm = TRUE))
     plist[[p]] <- data.frame(p, tmp)
 }
@@ -173,16 +177,17 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
         means <- merge(means, colors, by = "pitch_type", all = TRUE)
         plot(means$release_pos_x, means$release_pos_z, type = "p", xlim = c(-8, 8), ylim = c(-4, 8),
              col = means$pitch_col, lwd = 2, xlab = NA, ylab = NA, axes = FALSE,
-             main = "Approximation of Release Points")
+             main = "Typical Release Points")
         box()
         lines(x = c(-2, 2), y = c(-2, -2))
         lines(x = c(-2, -2.2), y = c(-2, -2.5))
         lines(x = c(2, 2.2), y = c(-2, -2.5))
         lines(x = c(2.2, 0), y = c(-2.5, -3))
         lines(x = c(-2.2, 0), y = c(-2.5, -3))
-        plotellipse(mid = c(0, 1.17), rx = 9, ry = .75, col = "burlywood")
+        plotellipse(mid = c(0, .75), rx = 9, ry = .75, col = "burlywood")
         filledrectangle(mid = c(0, 1.25), wx = 2, wy = .1, col = "white")
-        legend("topright", means[,"pitch_type"], col = means[,"pitch_col"], pch = 1, lwd = 2)
+        pitches <- gsub("_", " ", means[,"pitch_type"])
+        legend("topright", pitches, col = means[,"pitch_col"], pch = 1, lwd = 2, lty = NA)
         dev.off()
 
         rdat <- tdat[tdat$stand == "R",]
@@ -327,7 +332,7 @@ pitcherSummary(dat, paste0(datdir, "plots/"), speedranks = speedranks, spinranks
 dat <- dat[!is.na(dat$player_name),]
 
 for (n in unique(dat$player_name)){
-    pitcherSummary(dat, paste0(datdir, "plots/"), speedranks = speedranks, spinranks = spinranks, pitcher = n, plots = FALSE)
+    pitcherSummary(dat, paste0(datdir, "plots/"), speedranks = speedranks, spinranks = spinranks, pitcher = n, plots = TRUE)
 }
 
 fnames <- unique(dat$player_name)
@@ -359,10 +364,16 @@ tdnames <- unique(teamdat$Name2)
 tdnames[!tdnames %in% fnames]
 fnames[!fnames %in% tdnames]
 
-mapnames <- fnames[!fnames %in% tdnames]
-mapnames <- gsub(" ", "_", mapnames)
-names(mapnames) <- c("Seung-hwan_Oh", "J.C._Ramirez", "Greg_Infante", "Nate_Karns", "Robbie_Ross", "Robert_Whalen",
-                     "Carl_Edwards", "Matthew_Bowman")
+## This is a temporary fix for a name match problem.
+## I need a more elegant fix that will be robust to changes in the data in the future.
+mapnames <- c("Carl_Edwards" = "Carl_Edwards_Jr.",
+              "Greg_Infante" = "Gregory_Infante",
+              "J.C._Ramirez" = "JC_Ramirez",
+              "Matthew_Bowman" = "Matt_Bowman",
+              "Nate_Karns" = "Nathan_Karns",
+              "Robert_Whalen" = "Rob_Whalen",
+              "Robbie_Ross" = "Robbie_Ross_Jr.",
+              "Seung-hwan_Oh" = "Seung_Hwan_Oh")
 
 teamdat$Name <- mapvalues(teamdat$Name, names(mapnames), mapnames)
 
@@ -389,4 +400,5 @@ for (t in unique(teamdat$Team)){
     usedat[,"Age"] <- as.character(usedat[,"Age"])
     xx <- xtable(usedat)
     print(xx, file = paste0("../data/teaminfo/", t, ".tex"), include.rownames = FALSE, floating = FALSE)
+    write.csv(usedat, paste0("../data/teaminfo/", t, ".csv"))
 }
