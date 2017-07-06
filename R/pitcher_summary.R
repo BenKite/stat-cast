@@ -6,6 +6,8 @@ library(plyr)
 ## install.packages("xtable")
 library(xtable)
 
+##install.packages("hexbin")
+
 library(ggplot2)
 
 library(shape)
