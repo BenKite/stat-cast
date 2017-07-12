@@ -9,6 +9,7 @@ library(xtable)
 ##install.packages("hexbin")
 
 library(ggplot2)
+library(png)
 
 library(shape)
 
@@ -161,12 +162,6 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
     }
 
     if (isTRUE(plots)){
-    ## release points for pitches over and under 90mph.
-        pdf(paste0(pdir, "/plot1.pdf"))
-        plot(tdat$release_pos_x, tdat$release_pos_z, type = "p", xlim = c(-6, 6), ylim = c(0, 8),
-             col = ifelse(tdat$release_speed > 90, "red", "blue"), xlab = "Horizontal Position", ylab = "Vertical Position")
-        dev.off()
-
         ## Compare release points by pitch type
         pdf(paste0(pdir, "/plot2.pdf"))
         ptypes <- unique(tdat$pitch_type)
@@ -174,93 +169,80 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
         xmax <- max(tdat$release_pos_x, na.rm = TRUE) + .25
         ymin <- min(tdat$release_pos_z, na.rm = TRUE) - .25
         ymax <- max(tdat$release_pos_z, na.rm = TRUE) + .25
-        colors <- aggregate(pitch_col ~ pitch_type, data = tdat, function(x) names(table(x)))
-        means <- aggregate(cbind(release_pos_x, release_pos_z) ~ pitch_type, data = tdat, FUN = mean)
+        colors <- aggregate(pitch_col ~ pitch_type, data = tdat,
+                            function(x) names(table(x)))
+        means <- aggregate(cbind(release_pos_x, release_pos_z) ~ pitch_type,
+                           data = tdat, FUN = mean)
         means <- merge(means, colors, by = "pitch_type", all = TRUE)
-        plot(means$release_pos_x, means$release_pos_z, type = "p", xlim = c(-8, 8), ylim = c(-4, 8),
-             col = means$pitch_col, lwd = 2, xlab = NA, ylab = NA, axes = FALSE,
+
+        plot(means$release_pos_x, means$release_pos_z, type = "n",
+             xlim = c(-13, 12), ylim = c(-15.25, 13), col = means$pitch_col,
+             lwd = 2, xlab = NA, ylab = NA, axes = FALSE,
              main = "Typical Release Points")
         box()
-        lines(x = c(-2, 2), y = c(-2, -2))
-        lines(x = c(-2, -2.2), y = c(-2, -2.5))
-        lines(x = c(2, 2.2), y = c(-2, -2.5))
-        lines(x = c(2.2, 0), y = c(-2.5, -3))
-        lines(x = c(-2.2, 0), y = c(-2.5, -3))
-        plotellipse(mid = c(0, .75), rx = 9, ry = .75, col = "burlywood")
-        filledrectangle(mid = c(0, 1.25), wx = 2, wy = .1, col = "white")
+        ima <- readPNG("../images/pitching_backdrop1.png")
+        lim <- par()
+        rasterImage(ima, lim$usr[1], lim$usr[3], lim$usr[2], lim$usr[4])
+        filledrectangle(mid = c(0, 1.5), wx = 1.5, wy = .2, col = "white")
+        points(means$release_pos_x, means$release_pos_z, type = "p",
+             col = means$pitch_col, lwd = 2)
         pitches <- gsub("_", " ", means[,"pitch_type"])
-        legend("topright", pitches, col = means[,"pitch_col"], pch = 1, lwd = 2, lty = NA)
+        legend("topright", pitches, col = means[,"pitch_col"],
+               pch = 1, lwd = 2, lty = NA, bg = "grey")
+
         dev.off()
 
         rdat <- tdat[tdat$stand == "R",]
         ## Strike zone location
-        #pdf(paste0(pdir, "/plot3.pdf"))
-        #plot(rdat$plate_x, rdat$plate_z, type = "p", xlim = c(-2, 2), ylim = c(0, 4),
-        #     col = means$pitch_col, lwd = 1, xlab = "Horizontal Position", ylab = "Vertical Position",
-        #     main = "Right Handed Batters")
-        #legend("topright", means[,"pitch_type"], col = means[,"pitch_col"], pch = 1, lwd = 5)
-        #segments(x0 = -.75, y0 = 3.5, x1 = .75, y1 = 3.5, col = "black")
-        #segments(x0 = -.75, y0 = 3.5, x1 = -.75, y1 = 1.5, col = "black")
-        #segments(x0 = .75, y0 = 3.5, x1 = .75, y1 = 1.5, col = "black")
-        #segments(x0 = -.75, y0 = 1.5, x1 = .75, y1 = 1.5, col = "black")
-        #segments(x0 = -.75, y0 = 0, x1 = .75, y1 = 0, col = "black")
-        #segments(x0 = -.75, y0 = 0, x1 = -.75, y1 = -1, col = "black")
-        #segments(x0 = .75, y0 = 0, x1 = .75, y1 = -1, col = "black")
-        #dev.off()
+        pdf(paste0(pdir, "/plot3.pdf"))
+        plot(rdat$plate_x, rdat$plate_z, type = "n", xlim = c(-2.8, 2.8),
+             ylim = c(-1, 6), col = "black", lwd = 1,
+             xlab = NA, ylab = NA,
+             main = "Right Handed Batters", axes = FALSE)
+        ima <- readPNG("../images/pitching_backdrop1.png")
+        lim <- par()
+        rasterImage(ima, lim$usr[1], lim$usr[3], lim$usr[2], lim$usr[4])
+        points(rdat$plate_x, rdat$plate_z, type = "p",
+               col = alpha("white", .5), cex = 3, pch = 16)
+        par(new = T)
+        if(nrow(rdat) > 0){
+            smoothScatter(xy.coords(x = rdat$plate_x, y = rdat$plate_z),
+                          xlim = c(-2.8, 2.8), ylim = c(-1, 6),
+                          add = TRUE, useRaster = TRUE,
+                          colramp = colorRampPalette(c(rgb(1, 1, 1, 0),
+                                                       rgb(1, 0, 0, 1)), alpha = TRUE))
+        }
+        segments(x0 = -.75, y0 = 3.5, x1 = .75, y1 = 3.5, col = "blue")
+        segments(x0 = -.75, y0 = 3.5, x1 = -.75, y1 = 1.5, col = "blue")
+        segments(x0 = .75, y0 = 3.5, x1 = .75, y1 = 1.5, col = "blue")
+        segments(x0 = -.75, y0 = 1.5, x1 = .75, y1 = 1.5, col = "blue")
+        dev.off()
 
-        ggplot(rdat, aes(x=plate_x,y=plate_z)) + stat_binhex() +
-            labs(x = "") + labs(y = "") + ggtitle("Right Handed Batters") + guides(colour = FALSE) +
-            theme(plot.title = element_text(hjust = 0.5, size=22), panel.grid.major = element_blank(),
-                  panel.grid.minor = element_blank(),
-                  panel.background = element_blank(), axis.line = element_blank(), axis.text = element_blank(),
-                  axis.ticks = element_blank()) +
-            ylim(-1,5) + xlim(-2.5,2.5) +
-            geom_segment(aes(x = -.71, y = 0, xend = .71, yend = 0), color = "black", data = rdat) +
-            geom_segment(aes(x = -.71, y = 0, xend = -.75, yend = -.5), color = "black", data = rdat) +
-            geom_segment(aes(x = .71, y = 0, xend = .75, yend = -.5), color = "black", data = rdat) +
-            geom_segment(aes(x = -.75, y = -.5, xend = 0, yend = -.75), color = "black", data = rdat) +
-            geom_segment(aes(x = .75, y = -.5, xend = 0, yend = -.75), color = "black", data = rdat) +
-            geom_segment(aes(x = -.71, y = 3.5, xend = .71, yend = 3.5), color = "red", data = rdat, size = 3) +
-            geom_segment(aes(x = .71, y = 3.5, xend = .71, yend = 1.5), color = "red", data = rdat, size = 3) +
-            geom_segment(aes(x = -.71, y = 1.5, xend = .71, yend = 1.5), color = "red", data = rdat, size = 3) +
-            geom_segment(aes(x = -.71, y = 1.5, xend = -.71, yend = 3.5), color = "red", data = rdat, size = 3)
-        ggsave(paste0(pdir, "/plot3.pdf"))
 
         ldat <- tdat[tdat$stand == "L",]
-        ## Strike zone location
-        #pdf(paste0(pdir, "/plot4.pdf"))
-        #plot(ldat$plate_x, ldat$plate_z, type = "p", xlim = c(-2, 2), ylim = c(0, 4),
-        #     col = ldat$pitch_col, lwd = 1, xlab = "Horizontal Position", ylab = "Vertical Position",
-        #     main = "Left Handed Batters")
-        #legend("topright", means[,"pitch_type"], col = means[,"pitch_col"], pch = 1, lwd = 5)
-        #segments(x0 = -.75, y0 = 3.5, x1 = .75, y1 = 3.5, col = "black")
-        #segments(x0 = -.75, y0 = 3.5, x1 = -.75, y1 = 1.5, col = "black")
-        #segments(x0 = .75, y0 = 3.5, x1 = .75, y1 = 1.5, col = "black")
-        #segments(x0 = -.75, y0 = 1.5, x1 = .75, y1 = 1.5, col = "black")
-        #segments(x0 = -.75, y0 = 0, x1 = .75, y1 = 0, col = "black")
-        #segments(x0 = -.75, y0 = 0, x1 = -.75, y1 = -1, col = "black")
-        #segments(x0 = .75, y0 = 0, x1 = .75, y1 = -1, col = "black")
-        #dev.off()
-
-        ggplot(ldat,aes(x=plate_x,y=plate_z)) + stat_binhex() +
-            labs(x = "") + labs(y = "") + ggtitle("Left Handed Batters") + guides(colour = FALSE) +
-            theme(plot.title = element_text(hjust = 0.5, size=22), panel.grid.major = element_blank(),
-                  panel.grid.minor = element_blank(),
-                  panel.background = element_blank(), axis.line = element_blank(), axis.text = element_blank(),
-                  axis.ticks = element_blank()) +
-            ylim(-1,5) + xlim(-2.5,2.5) +
-            geom_segment(aes(x = -.71, y = 0, xend = .71, yend = 0), color = "black", data = ldat) +
-            geom_segment(aes(x = -.71, y = 0, xend = -.75, yend = -.5), color = "black", data = ldat) +
-            geom_segment(aes(x = .71, y = 0, xend = .75, yend = -.5), color = "black", data = ldat) +
-            geom_segment(aes(x = -.75, y = -.5, xend = 0, yend = -.75), color = "black", data = ldat) +
-            geom_segment(aes(x = .75, y = -.5, xend = 0, yend = -.75), color = "black", data = ldat) +
-
-            geom_segment(aes(x = -.71, y = 3.5, xend = .71, yend = 3.5), color = "red", data = ldat, size = 3) +
-            geom_segment(aes(x = .71, y = 3.5, xend = .71, yend = 1.5), color = "red", data = ldat, size = 3) +
-            geom_segment(aes(x = -.71, y = 1.5, xend = .71, yend = 1.5), color = "red", data = ldat, size = 3) +
-            geom_segment(aes(x = -.71, y = 1.5, xend = -.71, yend = 3.5), color = "red", data = ldat, size = 3)
-
-        ggsave(paste0(pdir, "/plot4.pdf"))
+        pdf(paste0(pdir, "/plot4.pdf"))
+        plot(ldat$plate_x, ldat$plate_z, type = "n", xlim = c(-2.8, 2.8),
+             ylim = c(-1, 6), col = "black", lwd = 1,
+             xlab = NA, ylab = NA,
+             main = "Left Handed Batters", axes = FALSE)
+        ima <- readPNG("../images/pitching_backdrop1.png")
+        lim <- par()
+        rasterImage(ima, lim$usr[1], lim$usr[3], lim$usr[2], lim$usr[4])
+        points(ldat$plate_x, ldat$plate_z, type = "p",
+               col = alpha("white", .5), cex = 3, pch = 16)
+        par(new = T)
+        if(nrow(ldat) > 0){
+            smoothScatter(xy.coords(x = ldat$plate_x, y = ldat$plate_z),
+                          xlim = c(-2.8, 2.8), ylim = c(-1, 6),
+                          add = TRUE, useRaster = TRUE,
+                          colramp = colorRampPalette(c(rgb(1, 1, 1, 0),
+                                                       rgb(1, 0, 0, 1)), alpha = TRUE))
+        }
+        segments(x0 = -.75, y0 = 3.5, x1 = .75, y1 = 3.5, col = "blue")
+        segments(x0 = -.75, y0 = 3.5, x1 = -.75, y1 = 1.5, col = "blue")
+        segments(x0 = .75, y0 = 3.5, x1 = .75, y1 = 1.5, col = "blue")
+        segments(x0 = -.75, y0 = 1.5, x1 = .75, y1 = 1.5, col = "blue")
+        dev.off()
     }
 
     ## Pitch proportions
@@ -329,7 +311,8 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
     }
 }
 
-pitcherSummary(dat, paste0(datdir, "plots/"), speedranks = speedranks, spinranks = spinranks, pitcher = "Madison Bumgarner")
+pitcherSummary(dat, paste0(datdir, "plots/"), speedranks = speedranks,
+               spinranks = spinranks, pitcher = "Clayton Kershaw", plots = TRUE)
 
 dat <- dat[!is.na(dat$player_name),]
 
