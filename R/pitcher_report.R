@@ -7,6 +7,7 @@ library(plyr)
 library(xtable)
 
 patdir <- "../data/pitchers/plots"
+rdir <- "../report"
 
 pfiles <- list.files(patdir)
 
@@ -167,7 +168,7 @@ for (t in ugnames){
     tmptchunk <- gsub("FANCYT", fancynames[t], tchunk)
     tmptchunk <- gsub("TEAM", t, tmptchunk)
     tmpx <- read.csv(paste0("../data/teaminfo/", t, ".csv"), stringsAsFactors = FALSE)
-    players <- tmpx$Name
+    players <- tmpx$StatcastName
     players <- gsub(" ", "_", players)
     body <- list()
     for (p in players){
@@ -184,6 +185,10 @@ tmiddle <- paste0(tbody, collapse = "\n")
 
 doc <- paste0(header, tmiddle, footer, collapse = "\n")
 
-fileConn<-file("scouting.tex")
+if(dir.exists(rdir) == FALSE){
+    dir.create(rdir)
+}
+
+fileConn<-file(paste0(rdir, "/scouting.tex"))
 writeLines(doc, fileConn)
 close(fileConn)

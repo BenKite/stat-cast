@@ -328,39 +328,39 @@ teamfiles <- list.files("../data/teaminfo", "_pitching.csv")
 teamdat <- lapply(paste0("../data/teaminfo/", teamfiles), read.csv, stringsAsFactors = FALSE)
 
 teamdat <- do.call("rbind.fill", teamdat)
-handdat <- read.csv("../data/pitchers/handedness.csv", stringsAsFactors = FALSE)
-handdat$Throws <- ifelse(handdat$LeftHanded == "True", "Left", "Right")
-handdat <- handdat[,c("Name", "Throws")]
-
-teamdat <- merge(teamdat, handdat, by = c("Name"), all.x = TRUE, sort = FALSE)
 
 teamdat$Name2 <- NA
+teamdat$Last <- NA
+teamdat$FirstI <- NA
 for (i in 1:nrow(teamdat)){
     tmp <- teamdat$Name[i]
     if (substr(tmp, 1, 5) == "Rank_"){
         tmp <- "Rank_in"
     }
     teamdat$Name[i] <- strsplit(tmp, "_\\(")[[1]][1]
+    teamdat$FirstI[i] <- substr(tmp, 1, 1)
+    teamdat$Last[i] <- strsplit(teamdat$Name[i], "_")[[1]][length(strsplit(teamdat$Name[i], "_")[[1]])]
     teamdat$Name2[i] <- gsub("_", " ", teamdat$Name[i])
 }
 
-tdnames <- unique(teamdat$Name2)
+## First initial and last name in Statcast data
+dat$FirstI <- substr(dat$player_name, 1, 1)
 
-tdnames[!tdnames %in% fnames]
-fnames[!fnames %in% tdnames]
+lasts <- rep(NA, length(fnames))
+firsts <- rep(NA, length(fnames))
+handedness <- rep(NA, length(fnames))
+for (f in fnames){
+    firsts[f] <- substr(f, 1, 1)
+    lasts[f] <- strsplit(f, " ")[[1]][length(strsplit(f, " ")[[1]])]
+    handedness[f] <- unique(dat[dat$player_name == f,"p_throws"])
+}
 
-## This is a temporary fix for a name match problem.
-## I need a more elegant fix that will be robust to changes in the data in the future.
-mapnames <- c("Carl_Edwards" = "Carl_Edwards_Jr.",
-              "Greg_Infante" = "Gregory_Infante",
-              "J.C._Ramirez" = "JC_Ramirez",
-              "Matthew_Bowman" = "Matt_Bowman",
-              "Nate_Karns" = "Nathan_Karns",
-              "Robert_Whalen" = "Rob_Whalen",
-              "Robbie_Ross" = "Robbie_Ross_Jr.",
-              "Seung-hwan_Oh" = "Seung_Hwan_Oh")
+scnames <- data.frame(firsts, lasts, fnames, handedness)
+names(scnames) <- c("FirstI", "Last", "StatcastName", "Throws")
 
-teamdat$Name <- mapvalues(teamdat$Name, names(mapnames), mapnames)
+teamdat <- merge(teamdat, scnames, by = c("FirstI", "Last"))
+
+teamdat$pfolder <- gsub(" ", "_", teamdat$StatcastName)
 
 teamdat <- teamdat[!teamdat$Name %in% c("Team_Totals", "Rank_in"),]
 
@@ -368,7 +368,7 @@ write.csv(teamdat, "../data/teamdat.csv")
 
 for (t in unique(teamdat$Team)){
     usedat <- teamdat[teamdat$Team == t,]
-    usedat <- usedat[, c("Pos", "Name", "Throws", "Age", "W", "L", "ERA", "G", "GS", "IP", "BB", "SO")]
+    usedat <- usedat[, c("Pos", "Name", "Throws", "Age", "W", "L", "ERA", "G", "GS", "IP", "BB", "SO", "StatcastName")]
     for (i in 1:nrow(usedat)){
         pname <- usedat[i,"Name"]
         pname <- gsub("_", " ", pname)
@@ -377,13 +377,17 @@ for (t in unique(teamdat$Team)){
     }
     usedat <- unique(usedat)
     starters <- usedat[usedat$Pos == "SP",]
+    starters <- starters[order(starters$ERA),]
     closers <- usedat[usedat$Pos == "CL",]
+    closers <- closers[order(closers$ERA),]
     relievers <- usedat[usedat$Pos == "RP",]
+    relievers <- relievers[order(relievers$ERA),]
     others <- usedat[!usedat$Pos %in% c("SP", "CL", "RP"),]
     others <- others[order(others$ERA),]
     usedat <- rbind(starters, closers, relievers, others)
     usedat[,"Age"] <- as.character(usedat[,"Age"])
+    write.csv(usedat, paste0("../data/teaminfo/", t, ".csv"))
+    usedat$StatcastName <- NULL
     xx <- xtable(usedat)
     print(xx, file = paste0("../data/teaminfo/", t, ".tex"), include.rownames = FALSE, floating = FALSE)
-    write.csv(usedat, paste0("../data/teaminfo/", t, ".csv"))
 }
