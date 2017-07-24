@@ -8,6 +8,10 @@ import re, os
 import urllib.request as urlr
 
 def getImages(url, tableID):
+    if "pitching" in tableID:
+        pos = "pitchers"
+    else:
+        pos = "batters"
     res = requests.get(url)
     ## Work around comments
     comm = re.compile("<!--|-->")
@@ -21,28 +25,18 @@ def getImages(url, tableID):
             name = tmp[tmp.find("shtml\">") + 7: ]
             name = name[:name.find("<")]
             name = name.replace(" ", "_")
-            ## Names that I know do not match the folder structure
-            badnames =  ["Nate_Karns", "Robbie_Ross", "Carl_Edwards", "Greg_Infante",
-                         "J.C._Ramirez", "Robert_Whalen", "Seung-hwan_Oh", "Matthew_Bowman"]
-            fixednames = ["Nathan_Karns", "Robbie_Ross_Jr.", "Carl_Edwards_Jr.", "Gregory_Infante",
-                          "JC_Ramirez", "Rob_Whalen", "Seung_Hwan_Oh", "Matt_Bowman"]
-            namelist = pandas.DataFrame([badnames, fixednames])
-            if name in badnames:
-                for n in namelist:
-                    if name == namelist[n][0]:
-                        name = namelist[n][1]
-            #if not os.path.exists("../data/pitchers/plots/" + name + "/headshot.png"):
-            ppage = "http://www.baseball-reference.com" + link
-            res = requests.get(ppage)
-            ## Work around comments
-            comm = re.compile("<!--|-->")
-            soup = bs4.BeautifulSoup(comm.sub("", res.text), 'lxml')
-            image = str(soup.findAll("img")[1])
-            image = image[image.find("src=\"") + 5: image.find(".jpg") + 4]
-            try:
-                urlr.urlretrieve(image, "../data/pitchers/plots/" + name + "/headshot.png")
-            except FileNotFoundError:
-                print("Couldn't find a directory for " + name)
+            if not os.path.exists("../data/" + pos + "/plots/" + name + "/headshot.png"):
+                ppage = "http://www.baseball-reference.com" + link
+                res = requests.get(ppage)
+                ## Work around comments
+                comm = re.compile("<!--|-->")
+                soup = bs4.BeautifulSoup(comm.sub("", res.text), 'lxml')
+                image = str(soup.findAll("img")[1])
+                image = image[image.find("src=\"") + 5: image.find(".jpg") + 4]
+                try:
+                    urlr.urlretrieve(image, "../data/" + pos + "/plots/" + name + "/headshot.png")
+                except FileNotFoundError:
+                    print("Couldn't find a directory for " + name)
    
 
 teams = ['ATL', 'ARI', 'BAL', 'BOS', 'CHC', 'CHW', 'CIN', 'CLE', 'COL', 'DET',
@@ -52,3 +46,5 @@ teams = ['ATL', 'ARI', 'BAL', 'BOS', 'CHC', 'CHW', 'CIN', 'CLE', 'COL', 'DET',
 for t in teams:
     url = "http://www.baseball-reference.com/teams/" + t + "/2017.shtml"
     getImages(url, "team_pitching")
+    getImages(url, "team_batting")
+    
