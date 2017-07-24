@@ -86,7 +86,9 @@ dat$pitch_type <- mapvalues(dat$pitch_type, names(ptypes), ptypes)
 dat$sprayx <- dat$hc_x - 125
 dat$sprayy <- (dat$hc_y - 200) * -1
 
-dat$launchAngle_x <- acos(dat$sprayx)/(dat$sprayy)
+dat$launchAngle_x <- atan(dat$sprayy/dat$sprayx)
+
+dat$spray_angle <- round(tan(dat$sprayx/(dat$sprayy*-1))*180/pi,1)
 
 plot(dat$sprayx, dat$sprayy, xlim = c(-200, 200), ylim = c(-20, 400))
 
@@ -110,10 +112,10 @@ batterSummary <- function(dat, directory, speedranks, spinranks, batterid = NULL
         dir.create(pdir)
     }
 
-    tdat <- tdat[tdat$pitch_type %in% names(table(tdat$pitch_type))[table(tdat$pitch_type) > 5],]
+    #tdat <- tdat[tdat$pitch_type %in% names(table(tdat$pitch_type))[table(tdat$pitch_type) > 5],]
 
-    if (nrow(tdat) == 0){
-        return("No rows!")
+    if (nrow(tdat) < 100){
+        return("Too few pitches to generate a report worth the space on the page.")
     }
 
     if (isTRUE(plots)){
@@ -151,21 +153,61 @@ batterSummary <- function(dat, directory, speedranks, spinranks, batterid = NULL
         contact <- list()
         for (h in c("L", "R")){
             hdat <- tdat[which(tdat$p_throws == h),]
+            if(nrow(hdat) == 0){
+                break
+            }
             cont <- matrix(NA, length(unique(hdat$pitch_type)), ncol = 3)
             cont[,1] <-  unique(hdat$pitch_type)
             for (p in 1:length(unique(hdat$pitch_type))){
                 pdat <- hdat[which(hdat$pitch_type == cont[p,1]),]
-                cont[p,2] <- sum(pdat$contact)/sum(pdat$swing)
+                cont[p,2] <- paste0(round(sum(pdat$contact)/sum(pdat$swing), 2)*100, "%")
                 cont[p,3] <- sum(pdat$swing)
-                ##t1 <- xtable(tmpptable, align = c("l", rep("r", ncol(tmpptable))))
-                ##print(t1, file = paste0(pdir, "/table1.tex"), include.rownames = FALSE, floating = FALSE)
+                t1 <- xtable(cont, align = c("l", rep("r", ncol(cont))))
+                print(t1, file = paste0(pdir, "/contact_", h, ".tex"), include.rownames = FALSE, floating = FALSE)
 
             }
             contact[[h]] <- cont
         }
     }
-    tdat$scol <- ifelse(tdat$sprayx > 0, "red", "blue")
-    ##tdat$scol <- ifelse(tdat$launchAngle_x > 0, "red", "blue")
+
+    tdat$scol <- ifelse(tdat$spray_angle > 30, "red",
+                 ifelse(tdat$spray_angle <= 30 & tdat$spray_angle  > 15, "orange",
+                 ifelse(tdat$spray_angle <= 15 & tdat$spray_angle  > 0, "yellow",
+                 ifelse(tdat$spray_angle <= 0 & tdat$spray_angle  > -15, "green",
+                 ifelse(tdat$spray_angle <= -15 & tdat$spray_angle  > -30, "blue", "purple")))))
+
+    tdat$section <- ifelse(tdat$spray_angle > 30, 1,
+                    ifelse(tdat$spray_angle <= 30 & tdat$spray_angle  > 15, 2,
+                    ifelse(tdat$spray_angle <= 15 & tdat$spray_angle  > 0, 3,
+                    ifelse(tdat$spray_angle <= 0 & tdat$spray_angle  > -15, 4,
+                    ifelse(tdat$spray_angle <= -15 & tdat$spray_angle  > -30, 5, 6)))))
+    sdat <- tdat[which(abs(tdat$spray_angle) <= 50),]
+    gballs <- sdat[which(sdat$bb_type == "ground_ball"),]
+    stable <- paste0(round(table(gballs$section)/nrow(gballs), 2)*100, "%")
+
+    pdf(paste0(pdir, "ground_ball.pdf"))
+    plot(tdat$sprayx, tdat$sprayy, type = "n", axes = FALSE, xlab = NA, ylab = NA, main = "Ground ball spray chart",
+         xlim = c(-83, 118), ylim = c(-50, 200))
+    ima <- readPNG("../images/groundball_diamond.png")
+    lim <- par()
+    rasterImage(ima, lim$usr[1], lim$usr[3], lim$usr[2], lim$usr[4])
+    ## Home to 2nd
+    segments(20, -40, 11, 200)
+    ##
+    segments(20, -40, 72, 200)
+    segments(20, -40, 120, 170)
+    ##
+    segments(20, -40, -45, 200)
+    segments(20, -40, -100, 170)
+
+    text(100, 80, stable[6], cex = 2, col = "red")
+    text(70, 100, stable[5], cex = 2, col = "red")
+    text(35, 115, stable[4], cex = 2, col = "red")
+    text(0, 115, stable[3], cex = 2, col = "red")
+    text(-40, 100, stable[2], cex = 2, col = "red")
+    text(-65, 80, stable[1], cex = 2, col = "red")
+    dev.off()
+
     for (b in unique(tdat$bb_type)){
         if (!is.na(b)){
             tmpdat <- tdat[which(tdat$bb_type == b),]
@@ -174,7 +216,7 @@ batterSummary <- function(dat, directory, speedranks, spinranks, batterid = NULL
             segments(0, 0, tmpdat$sprayx, tmpdat$sprayy, col = tmpdat$scol)
             dev.off()
             pdf(paste0(pdir, "launch_", b, ".pdf"))
-            #hist(tmpdat$launchAngle_x, main = b, xlim = c(-60, 60))
+            hist(tmpdat$spray_angle, main = b, xlim = c(-60, 60))
             dev.off()
         }
     }
@@ -193,7 +235,7 @@ for (n in unique(dat$player_name)){
 fnames <- unique(dat$player_name)
 
 ## Make tables for each team
-teamfiles <- list.files("../data/teaminfo", "_pitching.csv")
+teamfiles <- list.files("../data/teaminfo", "_batting.csv")
 
 teamdat <- lapply(paste0("../data/teaminfo/", teamfiles), read.csv, stringsAsFactors = FALSE)
 
@@ -222,11 +264,11 @@ handedness <- rep(NA, length(fnames))
 for (f in fnames){
     firsts[f] <- substr(f, 1, 1)
     lasts[f] <- strsplit(f, " ")[[1]][length(strsplit(f, " ")[[1]])]
-    handedness[f] <- unique(dat[dat$player_name == f,"p_throws"])
+    handedness[f] <- paste0(unique(dat[dat$player_name == f,"stand"]), collapse = "/")
 }
 
 scnames <- data.frame(firsts, lasts, fnames, handedness)
-names(scnames) <- c("FirstI", "Last", "StatcastName", "Throws")
+names(scnames) <- c("FirstI", "Last", "StatcastName", "Bats")
 
 teamdat <- merge(teamdat, scnames, by = c("FirstI", "Last"))
 
@@ -234,11 +276,11 @@ teamdat$pfolder <- gsub(" ", "_", teamdat$StatcastName)
 
 teamdat <- teamdat[!teamdat$Name %in% c("Team_Totals", "Rank_in"),]
 
-write.csv(teamdat, "../data/teamdat.csv")
+write.csv(teamdat, "../data/teamdat_batting.csv")
 
 for (t in unique(teamdat$Team)){
     usedat <- teamdat[teamdat$Team == t,]
-    usedat <- usedat[, c("Pos", "Name", "Throws", "Age", "W", "L", "ERA", "G", "GS", "IP", "BB", "SO", "StatcastName")]
+    usedat <- usedat[, c("Pos", "Name", "Bats", "Age", "AB", "H", "R", "BA", "OBP", "HR", "RBI", "BB", "StatcastName")]
     for (i in 1:nrow(usedat)){
         pname <- usedat[i,"Name"]
         pname <- gsub("_", " ", pname)
@@ -246,18 +288,11 @@ for (t in unique(teamdat$Team)){
         usedat[i, "Name"] <- pname
     }
     usedat <- unique(usedat)
-    starters <- usedat[usedat$Pos == "SP",]
-    starters <- starters[order(starters$ERA),]
-    closers <- usedat[usedat$Pos == "CL",]
-    closers <- closers[order(closers$ERA),]
-    relievers <- usedat[usedat$Pos == "RP",]
-    relievers <- relievers[order(relievers$ERA),]
-    others <- usedat[!usedat$Pos %in% c("SP", "CL", "RP"),]
-    others <- others[order(others$ERA),]
-    usedat <- rbind(starters, closers, relievers, others)
+    usedat <- usedat[order(usedat$H, decreasing = TRUE),]
     usedat[,"Age"] <- as.character(usedat[,"Age"])
-    write.csv(usedat, paste0("../data/teaminfo/", t, ".csv"))
+    usedat <- usedat[which(usedat$AB > 50),]
+    write.csv(usedat, paste0("../data/teaminfo/", t, "_batting.csv"))
     usedat$StatcastName <- NULL
     xx <- xtable(usedat)
-    print(xx, file = paste0("../data/teaminfo/", t, ".tex"), include.rownames = FALSE, floating = FALSE)
+    print(xx, file = paste0("../data/teaminfo/", t, "_batting.tex"), include.rownames = FALSE, floating = FALSE)
 }
