@@ -90,8 +90,6 @@ dat$launchAngle_x <- atan(dat$sprayy/dat$sprayx)
 
 dat$spray_angle <- round(tan(dat$sprayx/(dat$sprayy*-1))*180/pi,1)
 
-plot(dat$sprayx, dat$sprayy, xlim = c(-200, 200), ylim = c(-20, 400))
-
 batterSummary <- function(dat, directory, speedranks, spinranks, batterid = NULL, batter = NULL, plots = NULL){
     if (!dir.exists(directory)){
         dir.create(directory)
@@ -170,53 +168,61 @@ batterSummary <- function(dat, directory, speedranks, spinranks, batterid = NULL
                 break
             }
             gballs <- hdat[which(hdat$bb_type == "ground_ball"),]
+            gballs <- gballs[which(abs(gballs$spray_angle) < 50),]
             stable <- paste0(round(table(gballs$section)/nrow(gballs), 2)*100, "%")
             pdf(paste0(pdir, paste0("ground_ball_", h, ".pdf")))
             plot(hdat$sprayx, hdat$sprayy, type = "n", axes = FALSE, xlab = NA, ylab = NA, main = "Ground Ball Spray Chart",
-                 xlim = c(-83, 118), ylim = c(-50, 200))
+                 xlim = c(-120, 120), ylim = c(-16, 180))
             ima <- readPNG("../images/groundball_diamond.png")
             lim <- par()
             rasterImage(ima, lim$usr[1], lim$usr[3], lim$usr[2], lim$usr[4])
             ## Home to 2nd
-            segments(20, -40, 11, 200)
-            ##
-            segments(20, -40, 72, 200)
-            segments(20, -40, 120, 170)
-            ##
-            segments(20, -40, -45, 200)
-            segments(20, -40, -100, 170)
+            segments(0, 0, 0, 200)
+            #segments(0, 0, hdat$sprayx, hdat$sprayy)
 
-            text(100, 80, stable[6], cex = 2, col = "white")
-            text(70, 100, stable[5], cex = 2, col = "white")
-            text(35, 115, stable[4], cex = 2, col = "white")
-            text(0, 115, stable[3], cex = 2, col = "white")
-            text(-40, 100, stable[2], cex = 2, col = "white")
-            text(-65, 80, stable[1], cex = 2, col = "white")
+            ##
+            segments(0, 0, 51, 193)
+            segments(0, 0, 100, 173)
+            ##
+            segments(0, 0, -51, 193)
+            segments(0, 0, -100, 173)
+
+            text(85, 100, stable[6], cex = 2, col = "white")
+            text(50, 120, stable[5], cex = 2, col = "white")
+            text(20, 130, stable[4], cex = 2, col = "white")
+            text(-20, 130, stable[3], cex = 2, col = "white")
+            text(-50, 120, stable[2], cex = 2, col = "white")
+            text(-85, 100, stable[1], cex = 2, col = "white")
+            segments(0, 0, hdat$sprayx[1], hdat$sprayy[1], col = hdat$scol[1])
             dev.off()
 
             gballs <- hdat[which(hdat$bb_type == "line_drive"),]
+            gballs <- gballs[which(abs(gballs$spray_angle) < 50),]
             stable <- paste0(round(table(gballs$section)/nrow(gballs), 2)*100, "%")
-            pdf(paste0(pdir, paste0("line_drive_", h, ".pdf")))
-            plot(hdat$sprayx, hdat$sprayy, type = "n", axes = FALSE, xlab = NA, ylab = NA, main = "Line Drive Spray Chart",
-                 xlim = c(-83, 118), ylim = c(-50, 200))
+            pdf(paste0(pdir, paste0("ground_ball_", h, ".pdf")))
+            plot(hdat$sprayx, hdat$sprayy, type = "n", axes = FALSE, xlab = NA, ylab = NA, main = "Ground Ball Spray Chart",
+                 xlim = c(-120, 120), ylim = c(-16, 180))
             ima <- readPNG("../images/groundball_diamond.png")
             lim <- par()
             rasterImage(ima, lim$usr[1], lim$usr[3], lim$usr[2], lim$usr[4])
             ## Home to 2nd
-            segments(20, -40, 11, 200)
-            ##
-            segments(20, -40, 72, 200)
-            segments(20, -40, 120, 170)
-            ##
-            segments(20, -40, -45, 200)
-            segments(20, -40, -100, 170)
+            segments(0, 0, 0, 200)
+            #segments(0, 0, hdat$sprayx, hdat$sprayy)
 
-            text(100, 80, stable[6], cex = 2, col = "white")
-            text(70, 100, stable[5], cex = 2, col = "white")
-            text(35, 115, stable[4], cex = 2, col = "white")
-            text(0, 115, stable[3], cex = 2, col = "white")
-            text(-40, 100, stable[2], cex = 2, col = "white")
-            text(-65, 80, stable[1], cex = 2, col = "white")
+            ##
+            segments(0, 0, 51, 193)
+            segments(0, 0, 100, 173)
+            ##
+            segments(0, 0, -51, 193)
+            segments(0, 0, -100, 173)
+
+            text(85, 100, stable[6], cex = 2, col = "white")
+            text(50, 120, stable[5], cex = 2, col = "white")
+            text(20, 130, stable[4], cex = 2, col = "white")
+            text(-20, 130, stable[3], cex = 2, col = "white")
+            text(-50, 120, stable[2], cex = 2, col = "white")
+            text(-85, 100, stable[1], cex = 2, col = "white")
+            segments(0, 0, hdat$sprayx[1], hdat$sprayy[1], col = hdat$scol[1])
             dev.off()
 
 
