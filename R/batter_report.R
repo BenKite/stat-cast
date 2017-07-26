@@ -1,4 +1,4 @@
-## Ben Kite
+head## Ben Kite
 
 ## install.packages("plyr")
 library(plyr)
@@ -41,7 +41,7 @@ header <-"
 \\maketitle
 
 \\newpage
-This is the first draft of my batter's scouting report. This draft is simply a report with player headshots and plots showing groundball spray percentages.
+This is the first draft of my batter's scouting report. For now I am keeping things simple and just reporting information about a batters ability to make contact, ground ball spray percentages, and line drive spray percentages. I am providing this information for left-handed and right-handed pitchers. I am going to add more information to help inform how a pitcher should attack each batter, and how the defense should position itself to be in the best position to field ground balls and line drives.
 \\newpage
 \\tableofcontents
 \\thispagestyle{empty}
@@ -74,11 +74,28 @@ pchunk <- "
 \\includegraphics[width=2in,height=2in,keepaspectratio]{../data/batters/plots/NAME/headshot.png}
 \\end{figure}
 
-\\subsubsection*{Groundball information}
+\\newpage
+\\subsection*{FNOMBRE Against Left Handed Pitchers}
 \\noindent\\rule{6.5in}{0.4pt}
+\\subsubsection*{Contact Percentage on Swings}
+\\begin{table}[H]
+\\input{../data/batters/plots/NAME/contact_L.tex}
+\\end{table}
 \\begin{figure}[H]
 \\centering
-\\includegraphics[scale=0.55]{../data/batters/plots/NAME/ground_ball.pdf}
+\\includegraphics[scale=0.45]{../data/batters/plots/NAME/ground_ball_L.pdf}\\includegraphics[scale=0.45]{../data/batters/plots/NAME/line_drive_L.pdf}
+\\end{figure}
+
+\\newpage
+\\subsection*{FNOMBRE Against Right Handed Pitchers}
+\\noindent\\rule{6.5in}{0.4pt}
+\\subsubsection*{Contact Percentage on Swings}
+\\begin{table}[H]
+\\input{../data/batters/plots/NAME/contact_R.tex}
+\\end{table}
+\\begin{figure}[H]
+\\centering
+\\includegraphics[scale=0.45]{../data/batters/plots/NAME/ground_ball_R.pdf}\\includegraphics[scale=0.45]{../data/batters/plots/NAME/line_drive_R.pdf}
 \\end{figure}
 
 "
@@ -119,32 +136,39 @@ fancynames <- c("Arizona Diamondbacks",
 
 names(fancynames) <- ugnames
 
-tbody <- list()
-for (t in ugnames){
-    tmptchunk <- gsub("FANCYT", fancynames[t], tchunk)
-    tmptchunk <- gsub("TEAM", t, tmptchunk)
-    tmpx <- read.csv(paste0("../data/teaminfo/", t, "_batting.csv"), stringsAsFactors = FALSE)
-    players <- tmpx$StatcastName
-    players <- gsub(" ", "_", players)
-    body <- list()
-    for (p in players){
-        fname <- gsub("_", " ", p)
-        tmpchunk <- gsub("NAME", p, pchunk)
-        tmpchunk <- gsub("FNOMBRE", fname, tmpchunk)
-        body[[p]] <- tmpchunk
+reportMaker <- function(teams){
+
+    ugnames <- teams
+
+    tbody <- list()
+    for (t in ugnames){
+        tmptchunk <- gsub("FANCYT", fancynames[t], tchunk)
+        tmptchunk <- gsub("TEAM", t, tmptchunk)
+        tmpx <- read.csv(paste0("../data/teaminfo/", t, "_batting.csv"), stringsAsFactors = FALSE)
+        players <- tmpx$StatcastName
+        players <- gsub(" ", "_", players)
+        body <- list()
+        for (p in players){
+            fname <- gsub("_", " ", p)
+            tmpchunk <- gsub("NAME", p, pchunk)
+            tmpchunk <- gsub("FNOMBRE", fname, tmpchunk)
+            body[[p]] <- tmpchunk
+        }
+        middle <- paste0(body, collapse = "\n")
+        tbody[[t]] <- paste0(tmptchunk, middle, collapse = "\n")
     }
-    middle <- paste0(body, collapse = "\n")
-    tbody[[t]] <- paste0(tmptchunk, middle, collapse = "\n")
+
+    tmiddle <- paste0(tbody, collapse = "\n")
+
+    doc <- paste0(header, tmiddle, footer, collapse = "\n")
+
+    if(dir.exists(rdir) == FALSE){
+        dir.create(rdir)
+    }
+
+    fileConn<-file(paste0(rdir, "/scouting_batting.tex"))
+    writeLines(doc, fileConn)
+    close(fileConn)
 }
 
-tmiddle <- paste0(tbody, collapse = "\n")
-
-doc <- paste0(header, tmiddle, footer, collapse = "\n")
-
-if(dir.exists(rdir) == FALSE){
-    dir.create(rdir)
-}
-
-fileConn<-file(paste0(rdir, "/scouting_batting.tex"))
-writeLines(doc, fileConn)
-close(fileConn)
+reportMaker("KCR")

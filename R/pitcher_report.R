@@ -1,4 +1,4 @@
-## Ben Kite
+K## Ben Kite
 
 ## install.packages("plyr")
 library(plyr)
@@ -41,9 +41,9 @@ header <-"
 \\maketitle
 
 \\newpage
-This document contains basic information summarizing all pitchers on MLB rosters in 2017.
+This document contains basic information summarizing pitchers in 2017.
 All data are from pitches thrown in 2017 captured by Statcast. The data were collected from baseballsavant.mlb.com.
-Currently, each pitcher has two pages in the report.
+Currently, each pitcher featured has two pages in the report.
 The first page contains tables summarizing the types of pitches each player has thrown, how often, average release speed, and average spin rate.
 The averages for release speed and spin rate also have the pitcher's percentile reported for reference.
 The percentile indicates what percentage of pitchers have an average speed or spin rate lower than the given pitcher (rounding will cause percentiles near 100 to display as 100).
@@ -116,12 +116,12 @@ pchunk <- "
 
 \\begin{figure}[H]
 \\centering
-\\includegraphics[scale=0.55]{../data/pitchers/plots/NAME/plot2.pdf}
+\\includegraphics[scale=0.60]{../data/pitchers/plots/NAME/plot2.pdf}
 \\end{figure}
 
 \\subsubsection*{Location over Plate}
 \\begin{figure}[H]
-\\includegraphics[scale=0.4]{../data/pitchers/plots/NAME/plot3.pdf}\\includegraphics[scale=0.4]{../data/pitchers/plots/NAME/plot4.pdf}
+\\includegraphics[scale=0.45]{../data/pitchers/plots/NAME/plot3.pdf}\\includegraphics[scale=0.45]{../data/pitchers/plots/NAME/plot4.pdf}
 
 \\end{figure}
 
@@ -163,32 +163,41 @@ fancynames <- c("Arizona Diamondbacks",
 
 names(fancynames) <- ugnames
 
-tbody <- list()
-for (t in ugnames){
-    tmptchunk <- gsub("FANCYT", fancynames[t], tchunk)
-    tmptchunk <- gsub("TEAM", t, tmptchunk)
-    tmpx <- read.csv(paste0("../data/teaminfo/", t, ".csv"), stringsAsFactors = FALSE)
-    players <- tmpx$StatcastName
-    players <- gsub(" ", "_", players)
-    body <- list()
-    for (p in players){
-        fname <- gsub("_", " ", p)
-        tmpchunk <- gsub("NAME", p, pchunk)
-        tmpchunk <- gsub("FNOMBRE", fname, tmpchunk)
-        body[[p]] <- tmpchunk
+
+reportMaker <- function(teams){
+    ugnames <- teams
+
+    tbody <- list()
+    for (t in ugnames){
+        tmptchunk <- gsub("FANCYT", fancynames[t], tchunk)
+        tmptchunk <- gsub("TEAM", t, tmptchunk)
+        tmpx <- read.csv(paste0("../data/teaminfo/", t, ".csv"), stringsAsFactors = FALSE)
+        players <- tmpx$StatcastName
+        players <- gsub(" ", "_", players)
+        body <- list()
+        for (p in players){
+            fname <- gsub("_", " ", p)
+            tmpchunk <- gsub("NAME", p, pchunk)
+            tmpchunk <- gsub("FNOMBRE", fname, tmpchunk)
+            body[[p]] <- tmpchunk
+        }
+        middle <- paste0(body, collapse = "\n")
+        tbody[[t]] <- paste0(tmptchunk, middle, collapse = "\n")
     }
-    middle <- paste0(body, collapse = "\n")
-    tbody[[t]] <- paste0(tmptchunk, middle, collapse = "\n")
+
+    tmiddle <- paste0(tbody, collapse = "\n")
+
+    doc <- paste0(header, tmiddle, footer, collapse = "\n")
+
+    if(dir.exists(rdir) == FALSE){
+        dir.create(rdir)
+    }
+
+    fileConn<-file(paste0(rdir, "/scouting.tex"))
+    writeLines(doc, fileConn)
+    close(fileConn)
 }
 
-tmiddle <- paste0(tbody, collapse = "\n")
+## Specify what teams should be included in the report
 
-doc <- paste0(header, tmiddle, footer, collapse = "\n")
-
-if(dir.exists(rdir) == FALSE){
-    dir.create(rdir)
-}
-
-fileConn<-file(paste0(rdir, "/scouting.tex"))
-writeLines(doc, fileConn)
-close(fileConn)
+reportMaker("KCR")

@@ -112,11 +112,24 @@ batterSummary <- function(dat, directory, speedranks, spinranks, batterid = NULL
         dir.create(pdir)
     }
 
+    pitches <- unique(dat$pitch_type)
     #tdat <- tdat[tdat$pitch_type %in% names(table(tdat$pitch_type))[table(tdat$pitch_type) > 5],]
 
     if (nrow(tdat) < 100){
         return("Too few pitches to generate a report worth the space on the page.")
     }
+
+    tdat$scol <- ifelse(tdat$spray_angle > 30, "red",
+                 ifelse(tdat$spray_angle <= 30 & tdat$spray_angle  > 15, "orange",
+                 ifelse(tdat$spray_angle <= 15 & tdat$spray_angle  > 0, "yellow",
+                 ifelse(tdat$spray_angle <= 0 & tdat$spray_angle  > -15, "green",
+                 ifelse(tdat$spray_angle <= -15 & tdat$spray_angle  > -30, "blue", "purple")))))
+
+    tdat$section <- ifelse(tdat$spray_angle > 30, 1,
+                    ifelse(tdat$spray_angle <= 30 & tdat$spray_angle  > 15, 2,
+                    ifelse(tdat$spray_angle <= 15 & tdat$spray_angle  > 0, 3,
+                    ifelse(tdat$spray_angle <= 0 & tdat$spray_angle  > -15, 4,
+                    ifelse(tdat$spray_angle <= -15 & tdat$spray_angle  > -30, 5, 6)))))
 
     if (isTRUE(plots)){
         ## Swings and misses
@@ -156,57 +169,72 @@ batterSummary <- function(dat, directory, speedranks, spinranks, batterid = NULL
             if(nrow(hdat) == 0){
                 break
             }
-            cont <- matrix(NA, length(unique(hdat$pitch_type)), ncol = 3)
-            cont[,1] <-  unique(hdat$pitch_type)
-            for (p in 1:length(unique(hdat$pitch_type))){
-                pdat <- hdat[which(hdat$pitch_type == cont[p,1]),]
-                cont[p,2] <- paste0(round(sum(pdat$contact)/sum(pdat$swing), 2)*100, "%")
-                cont[p,3] <- sum(pdat$swing)
-                t1 <- xtable(cont, align = c("l", rep("r", ncol(cont))))
-                print(t1, file = paste0(pdir, "/contact_", h, ".tex"), include.rownames = FALSE, floating = FALSE)
+            gballs <- hdat[which(hdat$bb_type == "ground_ball"),]
+            stable <- paste0(round(table(gballs$section)/nrow(gballs), 2)*100, "%")
+            pdf(paste0(pdir, paste0("ground_ball_", h, ".pdf")))
+            plot(hdat$sprayx, hdat$sprayy, type = "n", axes = FALSE, xlab = NA, ylab = NA, main = "Ground Ball Spray Chart",
+                 xlim = c(-83, 118), ylim = c(-50, 200))
+            ima <- readPNG("../images/groundball_diamond.png")
+            lim <- par()
+            rasterImage(ima, lim$usr[1], lim$usr[3], lim$usr[2], lim$usr[4])
+            ## Home to 2nd
+            segments(20, -40, 11, 200)
+            ##
+            segments(20, -40, 72, 200)
+            segments(20, -40, 120, 170)
+            ##
+            segments(20, -40, -45, 200)
+            segments(20, -40, -100, 170)
 
+            text(100, 80, stable[6], cex = 2, col = "white")
+            text(70, 100, stable[5], cex = 2, col = "white")
+            text(35, 115, stable[4], cex = 2, col = "white")
+            text(0, 115, stable[3], cex = 2, col = "white")
+            text(-40, 100, stable[2], cex = 2, col = "white")
+            text(-65, 80, stable[1], cex = 2, col = "white")
+            dev.off()
+
+            gballs <- hdat[which(hdat$bb_type == "line_drive"),]
+            stable <- paste0(round(table(gballs$section)/nrow(gballs), 2)*100, "%")
+            pdf(paste0(pdir, paste0("line_drive_", h, ".pdf")))
+            plot(hdat$sprayx, hdat$sprayy, type = "n", axes = FALSE, xlab = NA, ylab = NA, main = "Line Drive Spray Chart",
+                 xlim = c(-83, 118), ylim = c(-50, 200))
+            ima <- readPNG("../images/groundball_diamond.png")
+            lim <- par()
+            rasterImage(ima, lim$usr[1], lim$usr[3], lim$usr[2], lim$usr[4])
+            ## Home to 2nd
+            segments(20, -40, 11, 200)
+            ##
+            segments(20, -40, 72, 200)
+            segments(20, -40, 120, 170)
+            ##
+            segments(20, -40, -45, 200)
+            segments(20, -40, -100, 170)
+
+            text(100, 80, stable[6], cex = 2, col = "white")
+            text(70, 100, stable[5], cex = 2, col = "white")
+            text(35, 115, stable[4], cex = 2, col = "white")
+            text(0, 115, stable[3], cex = 2, col = "white")
+            text(-40, 100, stable[2], cex = 2, col = "white")
+            text(-65, 80, stable[1], cex = 2, col = "white")
+            dev.off()
+
+
+            cont <- matrix(NA, length(pitches), ncol = 3)
+            cont[,1] <-  pitches
+            cont[,2] <- 0
+            for (p in 1:length(pitches)){
+                pdat <- hdat[which(hdat$pitch_type == cont[p,1]),]
+                cont[p,3] <- paste0(round(sum(pdat$contact)/sum(pdat$swing), 2)*100, "%")
+                cont[p,2] <- sum(pdat$swing)
+                if(cont[p,2] == 0) cont[p,3] <- "-"
             }
+            colnames(cont) <- c("Pitch Type", "Number of Swings", "Contact %")
+            t1 <- xtable(cont, align = c("l", rep("r", ncol(cont))), caption = h)
+            print(t1, file = paste0(pdir, "/contact_", h, ".tex"), include.rownames = FALSE, floating = FALSE, caption.placement = 'top')
             contact[[h]] <- cont
         }
     }
-
-    tdat$scol <- ifelse(tdat$spray_angle > 30, "red",
-                 ifelse(tdat$spray_angle <= 30 & tdat$spray_angle  > 15, "orange",
-                 ifelse(tdat$spray_angle <= 15 & tdat$spray_angle  > 0, "yellow",
-                 ifelse(tdat$spray_angle <= 0 & tdat$spray_angle  > -15, "green",
-                 ifelse(tdat$spray_angle <= -15 & tdat$spray_angle  > -30, "blue", "purple")))))
-
-    tdat$section <- ifelse(tdat$spray_angle > 30, 1,
-                    ifelse(tdat$spray_angle <= 30 & tdat$spray_angle  > 15, 2,
-                    ifelse(tdat$spray_angle <= 15 & tdat$spray_angle  > 0, 3,
-                    ifelse(tdat$spray_angle <= 0 & tdat$spray_angle  > -15, 4,
-                    ifelse(tdat$spray_angle <= -15 & tdat$spray_angle  > -30, 5, 6)))))
-    sdat <- tdat[which(abs(tdat$spray_angle) <= 50),]
-    gballs <- sdat[which(sdat$bb_type == "ground_ball"),]
-    stable <- paste0(round(table(gballs$section)/nrow(gballs), 2)*100, "%")
-
-    pdf(paste0(pdir, "ground_ball.pdf"))
-    plot(tdat$sprayx, tdat$sprayy, type = "n", axes = FALSE, xlab = NA, ylab = NA, main = "Ground ball spray chart",
-         xlim = c(-83, 118), ylim = c(-50, 200))
-    ima <- readPNG("../images/groundball_diamond.png")
-    lim <- par()
-    rasterImage(ima, lim$usr[1], lim$usr[3], lim$usr[2], lim$usr[4])
-    ## Home to 2nd
-    segments(20, -40, 11, 200)
-    ##
-    segments(20, -40, 72, 200)
-    segments(20, -40, 120, 170)
-    ##
-    segments(20, -40, -45, 200)
-    segments(20, -40, -100, 170)
-
-    text(100, 80, stable[6], cex = 2, col = "red")
-    text(70, 100, stable[5], cex = 2, col = "red")
-    text(35, 115, stable[4], cex = 2, col = "red")
-    text(0, 115, stable[3], cex = 2, col = "red")
-    text(-40, 100, stable[2], cex = 2, col = "red")
-    text(-65, 80, stable[1], cex = 2, col = "red")
-    dev.off()
 
     for (b in unique(tdat$bb_type)){
         if (!is.na(b)){
@@ -276,7 +304,7 @@ teamdat$pfolder <- gsub(" ", "_", teamdat$StatcastName)
 
 teamdat <- teamdat[!teamdat$Name %in% c("Team_Totals", "Rank_in"),]
 
-write.csv(teamdat, "../data/teamdat_batting.csv")
+#write.csv(teamdat, "../data/teamdat_batting.csv")
 
 for (t in unique(teamdat$Team)){
     usedat <- teamdat[teamdat$Team == t,]
