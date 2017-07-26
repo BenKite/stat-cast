@@ -51,7 +51,7 @@ Having a higher percentile is not always better (e.g., percentile for spin rate 
 This is especially useful for the spin rate information provided by Statcast, which is in rotations per minute units.
 There are also tables providing information about how pitch selection changes based on the count, and how often balls hit into play are ground balls, line drives, flyballs, and popups.\\par
 The second page provides a plot showing the release points for each of the pitches in the player's arsenal, and then two plots showing pitch location relative to the strike zone for right and left handed batters.
-The release point plots show the average release point from the view of home plate. The image used in the background provides an idea of how these points look on an acutal field.
+The release point plots show the average release point from the view of home plate.
 The pitchers mound was drawn on manually to provide a concrete reference point for the release points.
 The points are designed to show where pitches are typically released, and to indicate how consistent average release points are across pitch types.
 In the pitch location plots, darker shades of red indicate a higher concentration of pitches. The black dots in the middle of the light red circles indicate pitch locations that are atypical.
@@ -200,4 +200,4 @@ reportMaker <- function(teams){
 
 ## Specify what teams should be included in the report
 
-reportMaker("KCR")
+reportMaker(ugnames)

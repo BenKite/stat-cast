@@ -135,7 +135,7 @@ speedranks <- pranks
 spinranks <- spinrates
 
 
-pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NULL, pitcher = NULL, plots = NULL){
+pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NULL, pitcher = NULL, plots = NULL, quickReport = TRUE){
     if (!dir.exists(directory)){
         dir.create(directory)
     }
@@ -180,10 +180,20 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
              lwd = 2, xlab = NA, ylab = NA, axes = FALSE,
              main = "Typical Release Points")
         box()
-        ima <- readPNG("../images/pitching_backdrop1.png")
-        lim <- par()
-        rasterImage(ima, lim$usr[1], lim$usr[3], lim$usr[2], lim$usr[4])
-        filledrectangle(mid = c(0, 1.5), wx = 1.5, wy = .2, col = "white")
+        if(isTRUE(quickReport)){
+            lines(x = c(-3.3, 3.3), y = c(-11.5, -11.5))
+            lines(x = c(-3.3, -3.4), y = c(-11.5, -12.5))
+            lines(x = c(3.3, 3.4), y = c(-11.5, -12.5))
+            lines(x = c(3.4, 0), y = c(-12.5, -13))
+            lines(x = c(-3.4, 0), y = c(-12.5, -13))
+            plotellipse(mid = c(0, .75), rx = 9, ry = .75, col = "burlywood")
+            filledrectangle(mid = c(0, 1.25), wx = 2, wy = .1, col = "white")
+        }else{
+            ima <- readPNG("../images/pitching_backdrop1.png")
+            lim <- par()
+            rasterImage(ima, lim$usr[1], lim$usr[3], lim$usr[2], lim$usr[4])
+            filledrectangle(mid = c(0, 1.5), wx = 1.5, wy = .2, col = "white")
+        }
         points(means$release_pos_x, means$release_pos_z, type = "p",
              col = means$pitch_col, lwd = 2)
         pitches <- gsub("_", " ", means[,"pitch_type"])
@@ -199,9 +209,21 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
              ylim = c(-1, 6), col = "black", lwd = 1,
              xlab = NA, ylab = NA,
              main = "Right Handed Batters", axes = FALSE)
-        ima <- readPNG("../images/pitching_backdrop1.png")
-        lim <- par()
-        rasterImage(ima, lim$usr[1], lim$usr[3], lim$usr[2], lim$usr[4])
+        box()
+        if(isTRUE(quickReport)){
+            segments(x0 = -.75, y0 = 0, x1 = .75, y1 = 0, col = "black")
+            segments(x0 = -.75, y0 = 0, x1 = -.8, y1 = -.25, col = "black")
+            segments(x0 = .75, y0 = 0, x1 = .8, y1 = -.25, col = "black")
+            segments(x0 = -.8, y0 = -.25, x1 = 0, y1 = -.4, col = "black")
+            segments(x0 = .8, y0 = -.25, x1 = 0, y1 = -.4, col = "black")
+            plotellipse(mid = c(0, 3), rx = 2, ry = .2, col = "burlywood")
+            filledrectangle(mid = c(0, 3.1), wx = .5, wy = .05, col = "white")
+        }else{
+            ima <- readPNG("../images/pitching_backdrop1.png")
+            lim <- par()
+            rasterImage(ima, lim$usr[1], lim$usr[3], lim$usr[2], lim$usr[4])
+            filledrectangle(mid = c(0, 1.5), wx = 1.5, wy = .2, col = "white")
+        }
         points(rdat$plate_x, rdat$plate_z, type = "p",
                col = alpha("white", .5), cex = 3, pch = 16)
         par(new = T)
@@ -225,9 +247,21 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
              ylim = c(-1, 6), col = "black", lwd = 1,
              xlab = NA, ylab = NA,
              main = "Left Handed Batters", axes = FALSE)
-        ima <- readPNG("../images/pitching_backdrop1.png")
-        lim <- par()
-        rasterImage(ima, lim$usr[1], lim$usr[3], lim$usr[2], lim$usr[4])
+        box()
+        if(isTRUE(quickReport)){
+            segments(x0 = -.75, y0 = 0, x1 = .75, y1 = 0, col = "black")
+            segments(x0 = -.75, y0 = 0, x1 = -.8, y1 = -.25, col = "black")
+            segments(x0 = .75, y0 = 0, x1 = .8, y1 = -.25, col = "black")
+            segments(x0 = -.8, y0 = -.25, x1 = 0, y1 = -.4, col = "black")
+            segments(x0 = .8, y0 = -.25, x1 = 0, y1 = -.4, col = "black")
+            plotellipse(mid = c(0, 3), rx = 2, ry = .2, col = "burlywood")
+            filledrectangle(mid = c(0, 3.1), wx = .5, wy = .05, col = "white")
+        }else{
+            ima <- readPNG("../images/pitching_backdrop1.png")
+            lim <- par()
+            rasterImage(ima, lim$usr[1], lim$usr[3], lim$usr[2], lim$usr[4])
+            filledrectangle(mid = c(0, 1.5), wx = 1.5, wy = .2, col = "white")
+        }
         points(ldat$plate_x, ldat$plate_z, type = "p",
                col = alpha("white", .5), cex = 3, pch = 16)
         par(new = T)
@@ -244,6 +278,7 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
         segments(x0 = -.75, y0 = 1.5, x1 = .75, y1 = 1.5, col = "blue")
         dev.off()
     }
+
 
     ## Pitch proportions
 
@@ -309,15 +344,16 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
         t3 <- xtable(b3, align = c("l", rep("r", ncol(b3))))
         print(t3, file = paste0(pdir, "/table3.tex"), include.rownames = FALSE, floating = FALSE)
     }
+
 }
 
 pitcherSummary(dat, paste0(datdir, "plots/"), speedranks = speedranks,
-               spinranks = spinranks, pitcher = "Clayton Kershaw", plots = TRUE)
+               spinranks = spinranks, pitcher = "Clayton Kershaw", plots = TRUE, quickReport = FALSE)
 
 dat <- dat[!is.na(dat$player_name),]
 
 for (n in unique(dat$player_name)){
-    pitcherSummary(dat, paste0(datdir, "plots/"), speedranks = speedranks, spinranks = spinranks, pitcher = n, plots = TRUE)
+    pitcherSummary(dat, paste0(datdir, "plots/"), speedranks = speedranks, spinranks = spinranks, pitcher = n, plots = TRUE, quickReport = TRUE)
 }
 
 fnames <- unique(dat$player_name)
