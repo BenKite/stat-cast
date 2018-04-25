@@ -69,8 +69,8 @@ teams = ['ATL', 'ARI', 'BAL', 'BOS', 'CHC', 'CHW', 'CIN', 'CLE', 'COL', 'DET',
          'PHI', 'PIT', 'SDP', 'SEA', 'SFG', 'STL', 'TBR', 'TEX', 'TOR', 'WSN']
 
 for t in teams:
-    tmp = pullPlayerData(t, 2017, "team_pitching")
-    tmpb = pullPlayerData(t, 2017, "team_batting")
+    tmp = pullPlayerData(t, 2018, "team_pitching")
+    tmpb = pullPlayerData(t, 2018, "team_batting")
     tmp.to_csv("../data/teaminfo/" + t + "_pitching.csv")
     tmpb.to_csv("../data/teaminfo/" + t + "_batting.csv")
 

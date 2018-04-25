@@ -35,6 +35,8 @@ def getImages(url, tableID):
                 image = image[image.find("src=\"") + 5: image.find(".jpg") + 4]
                 try:
                     urlr.urlretrieve(image, "../data/" + pos + "/plots/" + name + "/headshot.png")
+                except ValueError:
+                    print("No image for " + name)
                 except FileNotFoundError:
                     print("Couldn't find a directory for " + name)
    
@@ -46,5 +48,5 @@ teams = ['ATL', 'ARI', 'BAL', 'BOS', 'CHC', 'CHW', 'CIN', 'CLE', 'COL', 'DET',
 for t in teams:
     url = "http://www.baseball-reference.com/teams/" + t + "/2017.shtml"
     getImages(url, "team_pitching")
-    getImages(url, "team_batting")
+    #getImages(url, "team_batting")
     

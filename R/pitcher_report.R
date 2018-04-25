@@ -1,4 +1,4 @@
-K## Ben Kite
+## Ben Kite
 
 ## install.packages("plyr")
 library(plyr)
@@ -41,8 +41,8 @@ header <-"
 \\maketitle
 
 \\newpage
-This document contains basic information summarizing pitchers in 2017.
-All data are from pitches thrown in 2017 captured by Statcast. The data were collected from baseballsavant.mlb.com.
+This document contains basic information summarizing pitchers in 2018.
+All data are from pitches thrown in 2018 captured by Statcast. The data were collected from baseballsavant.mlb.com.
 Currently, each pitcher featured has two pages in the report.
 The first page contains tables summarizing the types of pitches each player has thrown, how often, average release speed, and average spin rate.
 The averages for release speed and spin rate also have the pitcher's percentile reported for reference.
@@ -54,7 +54,7 @@ The second page provides a plot showing the release points for each of the pitch
 The release point plots show the average release point from the view of home plate.
 The pitchers mound was drawn on manually to provide a concrete reference point for the release points.
 The points are designed to show where pitches are typically released, and to indicate how consistent average release points are across pitch types.
-In the pitch location plots, darker shades of red indicate a higher concentration of pitches. The black dots in the middle of the light red circles indicate pitch locations that are atypical.
+In the pitch location plots, darker shades of red indicate a higher concentration of pitches. The black dots in the middle of the light red circles indicate pitch locations that are atypical. I am always looking to make improvements; feel free to email suggestions to: kitebena@gmail.com
 \\newpage
 \\tableofcontents
 \\thispagestyle{empty}
