@@ -61,7 +61,7 @@ ptypes <- c("FF" = "Four_Seam",
             "CU" = "Curveball",
             "FC" = "Cutter",
             "SI" = "Sinker",
-            #"KN" = "Knuckleball",
+            "KN" = "Knuckleball",
             "FS" = "Fastball",
             "KC" = "Knucklecurve"
             )
@@ -69,7 +69,7 @@ ptypes <- c("FF" = "Four_Seam",
 dat$pitch_type <- mapvalues(dat$pitch_type, names(ptypes), ptypes)
 
 colors <- rainbow(n = length(unique(dat$pitch_type)))
-colors <- c("red", "orange", "yellow", "purple", "green", "pink", "blue", #"gray",
+colors <- c("red", "orange", "yellow", "purple", "green", "pink", "blue", "gray",
             "black", "brown")
 dat$pitch_col <- mapvalues(dat$pitch_type, unique(dat$pitch_type), colors)
 

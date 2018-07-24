@@ -9,6 +9,8 @@ pitchers and using it to generate a scouting report.
 
 My workflow to generate the report is:
 
+Python/get-team-info.py
+
 Python/stat-cast-request.py
 
 R/pitcher_summary.R
