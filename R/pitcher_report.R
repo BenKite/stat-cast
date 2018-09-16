@@ -87,6 +87,7 @@ pchunk <- "
 \\includegraphics[width=2in,height=2in,keepaspectratio]{../data/pitchers/plots/NAME/headshot.png}
 \\end{figure}
 
+
 \\subsubsection*{Pitches}
 
 \\begin{table}[H]

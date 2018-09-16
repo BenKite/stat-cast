@@ -296,8 +296,8 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
     names(ptable) <- c("Type", "% of Pitches")
     names(pspeeds) <- c("Type", "Average Release Speed (%tile)")
     names(pspins) <- c("Type", "Average Spin Rate (%tile)")
-    ptable <- merge(ptable, pspeeds, by = "Type")
-    ptable <- merge(ptable, pspins, by = "Type")
+    ptable <- merge(ptable, pspeeds, by = "Type", all.x = TRUE)
+    ptable <- merge(ptable, pspins, by = "Type", all.x = TRUE)
     ptable <- ptable[order(ptable[,"% of Pitches"], decreasing = TRUE),]
     ptable[,"% of Pitches"] <- paste0(round(ptable[,"% of Pitches"], 2)*100, "%")
     ptable[,"Average Release Speed (%tile)"] <- paste0(round(ptable[,"Average Release Speed (%tile)"], 2), "(", speedinfo[,paste0(ptable$Type, "speed_%")], ")")
@@ -308,7 +308,7 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
     print(t1, file = paste0(pdir, "/table1.tex"), include.rownames = FALSE, floating = FALSE)
 
     ## By count
-    count <- expand.grid("balls" = unique(tdat$balls), "strikes" = unique(tdat$strikes))
+    count <- expand.grid("balls" = unique(tdat$balls), "strikes" = unique(tdat$strikes), stringsAsFactors = FALSE)
     count[,"Number of Pitches"] <- NA
     count[,ptable[,"Type"]] <- NA
     count <- count[!is.na(count$balls),]
@@ -322,6 +322,7 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
         count[i, names(xx)] <- xx
         count[i, "Number of Pitches"] <- length(thrown)
     }
+    countnum <- count
     count <- apply(count, c(1, 2), function(x) ifelse(is.na(x), 0, as.numeric(x)))
     #count <- count[,!colMeans(count) == 0]
     count[,unique(tdat$pitch_type)] <- paste0(round(count[,unique(tdat$pitch_type)], 2)*100, "%")
@@ -348,6 +349,22 @@ pitcherSummary <- function(dat, directory, speedranks, spinranks, pitcherid = NU
         t3 <- xtable(b3, align = c("l", rep("r", ncol(b3))))
         print(t3, file = paste0(pdir, "/table3.tex"), include.rownames = FALSE, floating = FALSE)
     }
+
+    ## A brief summary
+    start <- countnum[which(countnum$balls == 0 & countnum$strikes == 0), 4:ncol(countnum)]
+    if (sum(start > .5, na.rm = TRUE) > 0){
+        start_expect <- paste0("At the start of the at-bat anticipate his ",
+                               tolower(gsub("_", " ", names(start)[start > .5][1])))
+    } else {
+        start_expect <- ""
+    }
+
+    downlow <- paste0(pitcher, " has ", nrow(ptable), " unique pitches thrown this season according to Stat-Cast. His favorite is his ", gsub("_", " ", ptable[1, 1]), ", which you will see about ", ptable[1, 2], " of the time. ", start_expect, "." )
+    sink(paste0(pdir, "/summary.tex"))
+    cat(downlow)
+    sink()
+
+
 
 }
 
@@ -378,7 +395,7 @@ for (i in 1:nrow(teamdat)){
         tmp <- "Rank_in"
     }
     teamdat$Name[i] <- strsplit(tmp, "_\\(")[[1]][1]
-    teamdat$FirstI[i] <- substr(tmp, 1, 1)
+    teamdat$FirstI[i] <- strsplit(strsplit(tmp, "_\\(")[[1]][1], "_")[[1]][1]
     teamdat$Last[i] <- strsplit(teamdat$Name[i], "_")[[1]][length(strsplit(teamdat$Name[i], "_")[[1]])]
     teamdat$Name2[i] <- gsub("_", " ", teamdat$Name[i])
 }
@@ -390,7 +407,7 @@ lasts <- rep(NA, length(fnames))
 firsts <- rep(NA, length(fnames))
 handedness <- rep(NA, length(fnames))
 for (f in fnames){
-    firsts[f] <- substr(f, 1, 1)
+    firsts[f] <- strsplit(f, " ")[[1]][1]
     lasts[f] <- strsplit(f, " ")[[1]][length(strsplit(f, " ")[[1]])]
     handedness[f] <- unique(dat[dat$player_name == f,"p_throws"])
 }
