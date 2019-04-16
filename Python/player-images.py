@@ -46,7 +46,7 @@ teams = ['ATL', 'ARI', 'BAL', 'BOS', 'CHC', 'CHW', 'CIN', 'CLE', 'COL', 'DET',
          'PHI', 'PIT', 'SDP', 'SEA', 'SFG', 'STL', 'TBR', 'TEX', 'TOR', 'WSN'] 
          
 for t in teams:
-    url = "http://www.baseball-reference.com/teams/" + t + "/2018.shtml"
+    url = "http://www.baseball-reference.com/teams/" + t + "/2019.shtml"
     getImages(url, "team_pitching")
     #getImages(url, "team_batting")
     

@@ -15,7 +15,7 @@ library(shape)
 
 datdir <- "../data/pitchers/"
 
-pfiles <- list.files(datdir, pattern = "2018.csv")
+pfiles <- list.files(datdir, pattern = "2019.csv")
 
 ## Be patient with this line
 ## It reads in over 500 .csv files
@@ -61,7 +61,7 @@ ptypes <- c("FF" = "Four_Seam",
             "CU" = "Curveball",
             "FC" = "Cutter",
             "SI" = "Sinker",
-            "KN" = "Knuckleball",
+            #"KN" = "Knuckleball",
             "FS" = "Fastball",
             "KC" = "Knucklecurve"
             )

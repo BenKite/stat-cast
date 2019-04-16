@@ -41,7 +41,7 @@ header <-"
 \\maketitle
 
 \\newpage
-This document contains basic information summarizing pitchers in 2018.
+This document contains basic information summarizing pitchers in 2019.
 All data are from pitches thrown in 2018 captured by Statcast. The data were collected from baseballsavant.mlb.com.
 Currently, each pitcher featured has two pages in the report.
 The first page contains tables summarizing the types of pitches each player has thrown, how often, average release speed, and average spin rate.

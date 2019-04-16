@@ -1,6 +1,6 @@
 ## Ben Kite
 
-## 2018-04-17
+## 2019-04-15
 
 import requests, bs4
 import re, os
@@ -72,7 +72,7 @@ def pullPitchingList(plist, directory, season):
         idval = str(plist.iloc[p, 1])
         pitcherData(idval, directory, season)
 
-pullPitchingList(plist, "../data/pitchers/", 2018)
+pullPitchingList(plist, "../data/pitchers/", 2019)
 
 ## Now do batters
 blist = listIDs("batter")
@@ -85,4 +85,4 @@ def pullBattingList(blist, directory, season):
         idval = str(blist.iloc[b, 1])
         batterData(idval, directory, season)
           
-pullBattingList(blist, "../data/batters/", 2018)
+pullBattingList(blist, "../data/batters/", 2019)
